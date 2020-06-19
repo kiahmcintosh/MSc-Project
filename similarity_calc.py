@@ -12,7 +12,7 @@ class Peak:
         return f"{self.__class__.__name__}({self.mass},{self.intensity})"
 
     def compare_peaks(self, peak_2, tolerance):
-        """Comapres to another peak and returns true if masses are within given tolerance"""
+        """Compares to another peak and returns true if masses are within given tolerance"""
         if (self.mass >= peak_2.mass-tolerance and self.mass <= peak_2.mass+tolerance):
             return True
         else:
@@ -67,10 +67,8 @@ def mgf_reader(file_path):
 
     for line in lines:
         if 'BEGIN IONS' in line:
-            #initiate new spectra list to contain lines of the next spectra data
-            spectrum_lines = []
-            #initiate new spectrum object
-            spectrum = Spectrum()
+            spectrum_lines = [] #initiate new spectra list to contain lines of the next spectra data
+            spectrum = Spectrum() #initiate new spectrum object
             continue
    
         if 'END IONS' in line:
@@ -165,8 +163,9 @@ def main(file_path):
 
     for spectrum_one in spectra_list:
         for spectrum_two in spectra_list:
-            #check if precursor masses are close enough to calculate cosine similarity
-            if spectrum_one.compare_precursor_mass(spectrum_two,1):
+            if spectrum_one.compare_precursor_mass(spectrum_two,1):#check if precursor masses are close enough to calculate cosine similarity
+                
+                #get spectrum IDs and calculate similarity
                 spectrum_match=(spectrum_one.feature_id,spectrum_two.feature_id,cosine_score(spectrum_one,spectrum_two,0.3))
                 spectra_matches.append(spectrum_match)
     
