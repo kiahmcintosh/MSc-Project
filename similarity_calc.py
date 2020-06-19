@@ -1,5 +1,6 @@
 import math
 import numpy
+import sys
 
 class Peak:
     def __init__(self,mass,intensity):
@@ -152,18 +153,29 @@ def cosine_score(spectrum_one, spectrum_two, tolerance):
        
     return total
 
+def main(file_path):
+    """Give mgf file path as argument.
+    Returns a list of spectrum pairs, showing the two spectrum IDs and the cosine similarity score of each pair"""
 
-#path to mgf file
-file_path = ".\example_data\MS2_peaks.mgf"
-#make list of spectrum objects from mgf file
-spectra_list=mgf_reader(file_path)
 
-for spectrum_one in spectra_list:
-    for spectrum_two in spectra_list:
-        #check if precursor masses are close enough to calculate cosine similarity
-        if spectrum_one.compare_precursor_mass(spectrum_two,1):
-            #print cosine scores
-            print(cosine_score(spectrum_one,spectrum_two,0.3))
+    #make list of spectrum objects from mgf file
+    spectra_list=mgf_reader(file_path)
+
+    spectra_matches=[]
+
+    for spectrum_one in spectra_list:
+        for spectrum_two in spectra_list:
+            #check if precursor masses are close enough to calculate cosine similarity
+            if spectrum_one.compare_precursor_mass(spectrum_two,1):
+                spectrum_match=(spectrum_one.feature_id,spectrum_two.feature_id,cosine_score(spectrum_one,spectrum_two,0.3))
+                spectra_matches.append(spectrum_match)
+    
+    return spectra_matches
+
+if __name__ == "__main__":
+    main(sys.argv[1])
+
+
 
 
 
