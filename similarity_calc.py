@@ -1,6 +1,9 @@
 import math
 import numpy
 import sys
+import networkx as nx
+from functools import total_ordering
+import bisect
 
 class Peak:
     """Class to hold an MS2 peak"""
@@ -12,14 +15,22 @@ class Peak:
     def __repr__(self):
         return f"{self.__class__.__name__}({self.mass},{self.intensity})"
         
-
+@total_ordering
 class Spectrum:
     def __init__(self):
         self.peaks = [] #list of peaks in spectrum
         self.feature_id=None
         
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.peaks})"
+        # return f"{self.__class__.__name__}({self.peaks})"
+        return self.feature_id
+    
+    def __lt__(self,spectrum):
+        if self.pep_mass<spectrum.pep_mass:
+            return True
+        else:
+            return False
+
 
     def add_peak(self,mass, intensity):
         self.peaks.append(Peak(mass,intensity))
@@ -41,7 +52,7 @@ class Spectrum:
         #set each peak's scaled intensity
         for peak in self.peaks:
             peak.norm_scaled=(peak.sqrt_intensity)/norm
-
+    
 
 def mgf_reader(file_path):
     """Takes the path to a .mgf file. Returns a list of Spectrum objects, each containing the attributes contained in the
@@ -102,7 +113,36 @@ def mgf_reader(file_path):
     file.close()
     return spectra_list
 
-def cosine_score(spectrum_one, spectrum_two, fragment_tolerance=0.3, modified=True,precursor_tolerance=400):
+def calc_similarities(spectra_list,fragment_tolerance=0.3, modified=False,precursor_tolerance=1.0):
+    """takes a list of spectrum objects and calculates modified cosine for each spectrum matched with every other spectrum.
+    returns a list of spectrum matches with cosine score and number of matching peaks"""
+
+    #list for matched spectra to be stored
+    spectra_matches=[]
+    
+    for i in range(0,len(spectra_list)):
+        spectrum_one=spectra_list[i]
+        for j in range(i+1,len(spectra_list)):
+            spectrum_two=spectra_list[j]
+                            
+            #cosine score calculation
+            score,peak_count=cosine_score(spectrum_one,spectrum_two,fragment_tolerance,modified,precursor_tolerance)
+                
+            #if spectra don't match/precursor mass too far away, don't add to list
+            if(score==0 and peak_count==0):
+                continue
+
+            #make tuple of spectra IDs,cosine score and number of matching peaks
+            spectrum_match=(spectrum_one,spectrum_two,score,peak_count)
+            # print(type(spectrum_match[0]))
+            # print(type(spectrum_match[1]))
+            # print(spectrum_match)
+                
+            spectra_matches.append(spectrum_match)
+    
+    return spectra_matches
+
+def cosine_score(spectrum_one, spectrum_two, fragment_tolerance=0.3, modified=False,precursor_tolerance=1.0):
     """takes two MS2 Spectrum objects, with the fragment tolerance and returns the cosine similarity score.
     By default will calculate modified cosine; use modification=False to return normal cosine.
     Default fragment mass tolerance = 0.3
@@ -162,109 +202,92 @@ def cosine_score(spectrum_one, spectrum_two, fragment_tolerance=0.3, modified=Tr
     return total, peak_count
 
 def filter_pairs(pairs):
-    """still to be completed"""
-    temp_pairs=[]
+    """still to be completed
+    Removes any matches with cosine <0.7 and <6 matches peaks"""
+    filtered_pairs=[]
     for pair in pairs:
-        # print(pair)
-        if pair[0]!=pair[1]:
-            if pair[2]>=0.7 and pair[3]>=6:
-                temp_pairs.append(pair)
+        #only keep spectra matches with cosine >0.7 and at least 6 matching peaks
+        if pair[2]>=0.7 and pair[3]>=6:
+            filtered_pairs.append(pair)
             
-    
     # print("filtered:")
     # print(temp_pairs)
-    print(f"number of filtered: {len(temp_pairs)}")
-
+    # print(f"number of filtered: {len(filtered_pairs)}")
 
 
     #sort by cosine - will need to remove lowest scored to reduce family size
-    pairs.sort(key=lambda spectra_pair: spectra_pair[2])
+    # filtered_pairs.sort(key=lambda spectra_pair: spectra_pair[2])
 
 
     """rest of function to be added"""
 
+    return filtered_pairs
+
 def library_match(spectra_list,lib_mgf):
     """Reads a given library mgf file and matches the given spectra to the library spectra using normal cosine.
     Each test spectra is given the name of the library spectra match with the highest cosine score."""
-    print("reading library file")
     library=mgf_reader(lib_mgf)
-    print("done")
-    m=0
-    n=0
+    library_sort=sorted(library)
+
     for test_spectra in spectra_list:
-        #make list of all library matches
-        possibles=[]
-        print(f"spectra: {test_spectra.feature_id}")
-
-        for lib_spectra in library:
-            score, peaks = cosine_score(test_spectra,lib_spectra,modified=False) #normal cosine score
+        pos=bisect.bisect(library_sort,test_spectra)
+        matches=[]
+        for lib in library_sort[pos-2:pos+2]:
+            score,peaks=cosine_score(test_spectra,lib,modified=False)
             if score>=0.7 and peaks>=3:
-                #cosine and number of peaks above threshold so add to list of matches
-                possibles.append((score,peaks,lib_spectra.name))
+                matches.append((score,peaks,lib.name))
         
-        if len(possibles)>0:
-            #sort matches by cosine score
-            possibles.sort(reverse=True,key=lambda tuple: tuple[0])
-            #name spectrum by highest cosine score
-            test_spectra.name=possibles[0][2]
-            # print(test_spectra.feature_id+"\t"+test_spectra.name)
-            print("matched")
-            m+=1
+        if len(matches)>0:
+            #sort possible library matches by cosine score
+            matches.sort(reverse=True,key=lambda tuple: tuple[0])
+            #use name of match with highest cosine score
+            test_spectra.name=matches[0][2]
+            # print(f"{test_spectra.feature_id}\t{test_spectra.name}")
+            
+def make_graph(nodes_list,edges_list):
+    graph=nx.Graph()
+    for node in nodes_list:
+        graph.add_node(node)
 
-        else:
-            print("no matches")
-            n+=1
+    for edge in edges_list:
+        graph.add_edge(edge[0],edge[1],weight=edge[2])
+    
+    print(nx.nodes(graph))
 
-    print(f"{m} matches, \t{n} unmatched")
-        
-        
+    nx.write_graphml(graph, "test.graphml")
+    
+
+
 def main(file_path):
     """Give mgf file path as argument.
-    Returns a list of spectrum pairs, showing the two spectrum IDs and the cosine similarity score of each pair"""
+    Returns a list of spectrum pairs, showing the two spectrum IDs, the cosine similarity score of each pair and number of matched peaks"""
 
     #make list of spectrum objects from mgf file
     print("reading file")
     spectra_list=mgf_reader(file_path)
-    print("done")
+   
     #match to library file to add names to spectra objects
-    #library_match(spectra_list,".\massbank_library\MASSBANK.mgf")
+    print("comparing to library")
+    library_match(spectra_list,".\massbank_library\MASSBANK.mgf")
     
-    #list for matched spectra to be stored
-    spectra_matches=[]
+    #calculate modified cosines, comparing each spectrum to every other spectrum
+    print("calculating cosine scores")
+    spectra_matches=calc_similarities(spectra_list,modified=True,precursor_tolerance=400)
 
-    precursor_tolerance=1.0 #haven't used this, need to work out where to use
-    fragment_tolerance=0.3
-    modification_tolerance=400
+    #filter matches
+    print("filtering spectrum matches")
+    spectra_matches=filter_pairs(spectra_matches)
 
-    for spectrum_one in spectra_list:
-        for spectrum_two in spectra_list:
-                            
-            #cosine score calculation
-            score,peak_count=cosine_score(spectrum_one,spectrum_two,fragment_tolerance)
-                
-            #if spectra don't match/precursor mass too far away, don't add to list
-            if(score==0 and peak_count==0):
-                continue
-
-            #make tuple of spectra IDs,cosine score and number of matching peaks
-            # spectrum_match=(spectrum_one.name,spectrum_two.name,score,peak_count)
-            spectrum_match=(spectrum_one.feature_id,spectrum_two.feature_id,score,peak_count)
-            # print(type(spectrum_match[0]))
-            # print(type(spectrum_match[1]))
-            print(spectrum_match)
-                
-            spectra_matches.append(spectrum_match)
+    print("making graph")
+    make_graph(spectra_list,spectra_matches)
     
-    # print(len(spectra_matches))
-    # spectra_matches=filter_pairs(spectra_matches)
-
-    return spectra_matches
+    # return spectra_matches
 
 ##to use from command line by giving path to mgf file as argument
 #if __name__ == "__main__":
 #    main(sys.argv[1])
 
-#
+
 import time
 start = time.ctime()
 
@@ -272,7 +295,9 @@ pairs=main(".\example_data\MS2_peaks.mgf")
 
 end = time.ctime()
 #print start and end time of program running
-print(f"start: {start}\tend: {end}")
+print(f"start: {start}\nend: {end}")
+
+
 
 
 
