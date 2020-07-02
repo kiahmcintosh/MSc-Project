@@ -143,10 +143,10 @@ def calc_similarities(spectra_list,fragment_tolerance=0.3, modified=False,precur
     return spectra_matches
 
 def cosine_score(spectrum_one, spectrum_two, fragment_tolerance=0.3, modified=False,precursor_tolerance=1.0):
-    """takes two MS2 Spectrum objects, with the fragment tolerance and returns the cosine similarity score.
-    By default will calculate modified cosine; use modification=False to return normal cosine.
+    """takes two MS2 Spectrum objects and returns the cosine similarity score and number of matched peaks.
+    By default will calculate normal cosine; use modification=True to return modified cosine.
     Default fragment mass tolerance = 0.3
-    Default precursor mass tolerance = 400"""
+    Default precursor mass tolerance = 1.0"""
     modification=spectrum_two.pep_mass-spectrum_one.pep_mass
     if abs(modification)>precursor_tolerance:
             return 0,0
@@ -256,8 +256,6 @@ def make_graph(nodes_list,edges_list):
 
     nx.write_graphml(graph, "test.graphml")
     
-
-
 def main(file_path):
     """Give mgf file path as argument.
     Returns a list of spectrum pairs, showing the two spectrum IDs, the cosine similarity score of each pair and number of matched peaks"""
@@ -281,7 +279,7 @@ def main(file_path):
     print("making graph")
     make_graph(spectra_list,spectra_matches)
     
-    # return spectra_matches
+    return spectra_matches
 
 ##to use from command line by giving path to mgf file as argument
 #if __name__ == "__main__":
