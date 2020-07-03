@@ -20,6 +20,7 @@ class Spectrum:
     def __init__(self):
         self.peaks = [] #list of peaks in spectrum
         self.feature_id=None
+        self.name=False
         
     def __repr__(self):
         # return f"{self.__class__.__name__}({self.peaks})"
@@ -64,7 +65,7 @@ def mgf_reader(file_path):
     #initiate list to hold all the Spectrum objects
     spectra_list=[]
 
-    # for line in lines[:250]:  ##alternative to test subset of data
+    # for line in lines[:5000]:  ##alternative to test subset of data
     for line in lines:
         if 'BEGIN IONS' in line:
             spectrum_lines = [] #initiate new spectra list to contain lines of the next spectra data
@@ -247,15 +248,48 @@ def library_match(spectra_list,lib_mgf):
 def make_graph(nodes_list,edges_list):
     graph=nx.Graph()
     for node in nodes_list:
-        graph.add_node(node)
+        if node.name:
+            graph.add_node(node,colour=1,name=node.name)
+        else:
+            graph.add_node(node,colour=0)
+        
 
     for edge in edges_list:
         graph.add_edge(edge[0],edge[1],weight=edge[2])
     
-    print(nx.nodes(graph))
+    # print(nx.nodes(graph))
+    return graph
 
-    nx.write_graphml(graph, "test.graphml")
     
+def get_family(graph,node,family_list):
+    neighbours=nx.all_neighbors(graph,node) #get list of all nodes connected to query node
+    if node not in family_list:
+        family_list.append(node)
+    for n in neighbours:
+        if n not in family_list: #if a neighbour is not known as part of the current family, add it to the family
+            family_list.append(n)
+            family_list=get_family(graph,n,family_list)
+    return family_list
+ 
+
+def filter_neighbours(spectra_list,matches,n):
+    for spectrum in spectra_list:
+        neighbours=[]
+        for m in matches:
+            if spectrum == m[0] or spectrum == m[1]:
+                neighbours.append(m)
+        # print(f"{spectrum}:\t{neighbours}")
+        if len(neighbours)>n:
+            neighbours.sort(reverse=True,key=lambda tuple: tuple[2])
+            # print(f"sorted: {neighbours}")
+            to_remove=neighbours[n:]
+            # print(to_remove)
+            for r in to_remove:
+                matches.remove(r)
+            
+    return matches
+            
+
 def main(file_path):
     """Give mgf file path as argument.
     Returns a list of spectrum pairs, showing the two spectrum IDs, the cosine similarity score of each pair and number of matched peaks"""
@@ -276,9 +310,13 @@ def main(file_path):
     print("filtering spectrum matches")
     spectra_matches=filter_pairs(spectra_matches)
 
+    print("filtering neighbours")
+    spectra_matches=filter_neighbours(spectra_list,spectra_matches,10)
+
     print("making graph")
-    make_graph(spectra_list,spectra_matches)
-    
+    graph=make_graph(spectra_list,spectra_matches)
+
+    nx.write_graphml(graph, "test.graphml")
     return spectra_matches
 
 ##to use from command line by giving path to mgf file as argument
@@ -295,10 +333,46 @@ end = time.ctime()
 #print start and end time of program running
 print(f"start: {start}\nend: {end}")
 
+#test graph:
+# graph=nx.Graph()
+# graph.add_edge(1,2,weight=0.5)
+# graph.add_edge(1,3,weight=1)
+# graph.add_edge(1,4,weight=0.2)
+# graph.add_edge(2,5,weight=0.35)
+# graph.add_edge(5,9,weight=0.4)
+# graph.add_edge(6,7,weight=0.86)
+# graph.add_edge(7,8,weight=0.9)
+# graph.add_edge(6,8,weight=0.64)
+# graph.add_node(10,color='red')
+
+# print(nx.edges(graph))
+# #test neighbour filter method
+# graph1=filter_neighbours(graph,2)
+# print(graph1)
+
+#testing family method
+# family1=get_family(graph,1,[])
+# family2=get_family(graph,7,[])
+
+#get all edges in a family
+# edges1=nx.edges(graph,family1)
+# print(edges1)
+# print(graph[1][2]['weight'])
+
+# edges2=nx.edges(graph,1)
+# print(edges2)
+# weight=nx.get_edge_attributes(graph,'weight')
+# for e in edges2:
+#     print(f"{e}: {weight[e]}")
+
+
+# ed_sort=sorted(edges2,reverse=True,key=lambda ed: weight[ed])
+# print(ed_sort)
+
+# for e in ed_sort:
+#     print(f"{e}: {weight[e]}")
 
 
 
-
-
-
+# nx.write_graphml(graph, "col_test.graphml")
 
