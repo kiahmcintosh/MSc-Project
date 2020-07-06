@@ -249,7 +249,7 @@ def make_graph(nodes_list,edges_list):
     graph=nx.Graph()
     for node in nodes_list:
         if node.name:
-            graph.add_node(node,colour=1,name=node.name)
+            graph.add_node(node,colour=1,ID=node.name)
         else:
             graph.add_node(node,colour=0)
         
@@ -260,19 +260,10 @@ def make_graph(nodes_list,edges_list):
     # print(nx.nodes(graph))
     return graph
 
-    
-def get_family(graph,node,family_list):
-    neighbours=nx.all_neighbors(graph,node) #get list of all nodes connected to query node
-    if node not in family_list:
-        family_list.append(node)
-    for n in neighbours:
-        if n not in family_list: #if a neighbour is not known as part of the current family, add it to the family
-            family_list.append(n)
-            family_list=get_family(graph,n,family_list)
-    return family_list
- 
-
 def filter_neighbours(spectra_list,matches,n):
+    """Give a list of Spectrum objects and a list of spectrum match tuples and n, the maximum number of neighbours (matches) each spectrum
+    can have. If a spectrum has more than n neighbours, the matches with the lowest cosine score are removed until there are only n remaining.
+    Returns the filtered list of spectral matches"""
     for spectrum in spectra_list:
         neighbours=[]
         for m in matches:
@@ -289,6 +280,48 @@ def filter_neighbours(spectra_list,matches,n):
             
     return matches
             
+def get_family(matches,spectrum,family_list,family_matches):
+    if spectrum not in family_list:
+        family_list.append(spectrum)
+    
+    neighbours=[]
+    for m in matches:
+        if spectrum == m[0]:
+            neighbours.append(m[1])
+            if m not in family_matches:
+                family_matches.append(m)
+
+        elif spectrum == m[1]:
+            neighbours.append(m[0])
+            if m not in family_matches:
+                family_matches.append(m)
+
+    for n in neighbours:
+        if n not in family_list:
+            family_list.append(n)
+            family_list,family_matches=get_family(matches,n,family_list,family_matches)
+    
+    return family_list,family_matches
+
+def filter_family(matches,spectra,n):
+    used_spectra=[]
+    for s in spectra:
+        if s not in used_spectra:
+            while True:
+
+                family,f_pairs=get_family(matches,s,[],[])
+
+                if len(family)<=n:
+                    break
+
+                f_pairs.sort(key=lambda tuple: tuple[2])
+                matches.remove(f_pairs[0])
+            
+            for f in family:
+                used_spectra.append(f)
+    
+    return matches
+
 
 def main(file_path):
     """Give mgf file path as argument.
@@ -313,11 +346,14 @@ def main(file_path):
     print("filtering neighbours")
     spectra_matches=filter_neighbours(spectra_list,spectra_matches,10)
 
+    print("filtering family size")
+    spectra_matches=filter_family(spectra_matches,spectra_list,100)
+
     print("making graph")
     graph=make_graph(spectra_list,spectra_matches)
 
-    nx.write_graphml(graph, "test.graphml")
-    return spectra_matches
+    nx.write_graphml(graph, "filtered_graph.graphml")
+    # return spectra_matches
 
 ##to use from command line by giving path to mgf file as argument
 #if __name__ == "__main__":
@@ -345,34 +381,30 @@ print(f"start: {start}\nend: {end}")
 # graph.add_edge(6,8,weight=0.64)
 # graph.add_node(10,color='red')
 
-# print(nx.edges(graph))
-# #test neighbour filter method
-# graph1=filter_neighbours(graph,2)
-# print(graph1)
 
-#testing family method
-# family1=get_family(graph,1,[])
-# family2=get_family(graph,7,[])
+#testing get_family
+# s1=Spectrum()
+# s2=Spectrum()
+# s3=Spectrum()
+# s4=Spectrum()
+# s5=Spectrum()
+# s6=Spectrum()
+# s7=Spectrum()
+# s8=Spectrum()
+# s9=Spectrum()
 
-#get all edges in a family
-# edges1=nx.edges(graph,family1)
-# print(edges1)
-# print(graph[1][2]['weight'])
+# s1.feature_id="1"
+# s2.feature_id="2"
+# s3.feature_id="3"
+# s4.feature_id="4"
+# s5.feature_id="5"
+# s6.feature_id="6"
+# s7.feature_id="7"
+# s8.feature_id="8"
+# s9.feature_id="9"
 
-# edges2=nx.edges(graph,1)
-# print(edges2)
-# weight=nx.get_edge_attributes(graph,'weight')
-# for e in edges2:
-#     print(f"{e}: {weight[e]}")
+# pairs=[(s1,s2,0.9),(s1,s3,0.5),(s1,s4,0.4),(s2,s5,0.3),(s5,s9,0.6),(s6,s7,0.3),(s7,s8,0.9),(s6,s8,0.8)]
+# # print(get_family(pairs,s1))
+# filter_family(pairs,[s1,s2,s3,s4,s5,s6,s7,s8,s9],3)
 
-
-# ed_sort=sorted(edges2,reverse=True,key=lambda ed: weight[ed])
-# print(ed_sort)
-
-# for e in ed_sort:
-#     print(f"{e}: {weight[e]}")
-
-
-
-# nx.write_graphml(graph, "col_test.graphml")
 
