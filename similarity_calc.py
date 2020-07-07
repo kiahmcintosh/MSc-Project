@@ -13,7 +13,8 @@ class Peak:
         self.sqrt_intensity = math.sqrt(self.intensity)
     
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.mass},{self.intensity})"
+        # return f"{self.__class__.__name__}({self.mass},{self.intensity})"
+        return str(self.mass)
         
 @total_ordering
 class Spectrum:
@@ -120,6 +121,7 @@ def calc_similarities(spectra_list,fragment_tolerance=0.3, modified=False,precur
 
     #list for matched spectra to be stored
     spectra_matches=[]
+   
     
     for i in range(0,len(spectra_list)):
         spectrum_one=spectra_list[i]
@@ -127,7 +129,8 @@ def calc_similarities(spectra_list,fragment_tolerance=0.3, modified=False,precur
             spectrum_two=spectra_list[j]
                             
             #cosine score calculation
-            score,peak_count=cosine_score(spectrum_one,spectrum_two,fragment_tolerance,modified,precursor_tolerance)
+            # score,peak_count=cosine_score(spectrum_one,spectrum_two,fragment_tolerance,modified,precursor_tolerance)
+            score,peak_count=max_cosine(spectrum_one,spectrum_two,fragment_tolerance,modified,precursor_tolerance)
                 
             #if spectra don't match/precursor mass too far away, don't add to list
             if(score==0 and peak_count==0):
@@ -135,10 +138,7 @@ def calc_similarities(spectra_list,fragment_tolerance=0.3, modified=False,precur
 
             #make tuple of spectra IDs,cosine score and number of matching peaks
             spectrum_match=(spectrum_one,spectrum_two,score,peak_count)
-            # print(type(spectrum_match[0]))
-            # print(type(spectrum_match[1]))
-            # print(spectrum_match)
-                
+            
             spectra_matches.append(spectrum_match)
     
     return spectra_matches
@@ -187,9 +187,6 @@ def cosine_score(spectrum_one, spectrum_two, fragment_tolerance=0.3, modified=Fa
         peak_two=pair[1]
         product=pair[2]
 
-        #keep track of number of peaks matched
-        
-
         if (peak_one not in used_peaks_one) and (peak_two not in used_peaks_two):
             #sum intensity product if both peaks have not been used already
             total+=product
@@ -199,29 +196,65 @@ def cosine_score(spectrum_one, spectrum_two, fragment_tolerance=0.3, modified=Fa
             #add to the list of used peaks
             used_peaks_one.append(peak_one)
             used_peaks_two.append(peak_two)
-
+    
     return total, peak_count
 
+def max_cosine(spectrum_one, spectrum_two, fragment_tolerance=0.3, modified=False,precursor_tolerance=1.0):
+    """takes two MS2 Spectrum objects and returns the maximum cosine similarity score and number of matched peaks.
+    By default will calculate normal cosine; use modification=True to return modified cosine.
+    Default fragment mass tolerance = 0.3
+    Default precursor mass tolerance = 1.0"""
+
+    modification=spectrum_two.pep_mass-spectrum_one.pep_mass
+    if abs(modification)>precursor_tolerance:
+            return 0,0
+    
+    if modified==False:
+        modification=0
+    
+    peak_pairs=[]
+
+    #make list of pairs of matched peaks within given tolerance
+    for peak1 in spectrum_one.peaks:
+        for peak2 in spectrum_two.peaks:
+
+            #check normal and modified peak masses
+            if (abs(peak1.mass-peak2.mass)<=fragment_tolerance) or (abs(peak1.mass+modification-peak2.mass) <= fragment_tolerance):
+                product=(peak1.norm_scaled)*(peak2.norm_scaled)
+                tuple = (peak1, peak2, product)
+                #add to list of peak pairs
+                peak_pairs.append(tuple)
+    
+    #make graph containing the peaks in the two spectra
+    B=nx.Graph()
+
+    #add edges to graph
+    for p in peak_pairs:
+        B.add_edge(p[0],p[1],weight=p[2])    
+    
+    #maximum weighted score
+    matching=nx.algorithms.max_weight_matching(B)
+
+    #number of peaks matched between the two spectra
+    peak_count=len(matching)
+
+    total=0
+    #sum the intensity products for the matched peaks
+    for m in matching:
+        for p in peak_pairs:
+            if (m[0]==p[0] and m[1]==p[1]) or (m[0]==p[1] and m[1]==p[0]):
+                total+=p[2]
+
+    return total,peak_count
+      
 def filter_pairs(pairs):
-    """still to be completed
-    Removes any matches with cosine <0.7 and <6 matches peaks"""
+    """Removes any spectra matches with cosine <0.7 and <6 matched peaks"""
     filtered_pairs=[]
     for pair in pairs:
         #only keep spectra matches with cosine >0.7 and at least 6 matching peaks
         if pair[2]>=0.7 and pair[3]>=6:
             filtered_pairs.append(pair)
             
-    # print("filtered:")
-    # print(temp_pairs)
-    # print(f"number of filtered: {len(filtered_pairs)}")
-
-
-    #sort by cosine - will need to remove lowest scored to reduce family size
-    # filtered_pairs.sort(key=lambda spectra_pair: spectra_pair[2])
-
-
-    """rest of function to be added"""
-
     return filtered_pairs
 
 def library_match(spectra_list,lib_mgf):
@@ -243,7 +276,6 @@ def library_match(spectra_list,lib_mgf):
             matches.sort(reverse=True,key=lambda tuple: tuple[0])
             #use name of match with highest cosine score
             test_spectra.name=matches[0][2]
-            # print(f"{test_spectra.feature_id}\t{test_spectra.name}")
             
 def make_graph(nodes_list,edges_list):
     graph=nx.Graph()
@@ -256,27 +288,27 @@ def make_graph(nodes_list,edges_list):
 
     for edge in edges_list:
         graph.add_edge(edge[0],edge[1],weight=edge[2])
-    
-    # print(nx.nodes(graph))
+
     return graph
 
 def filter_neighbours(spectra_list,matches,n):
-    """Give a list of Spectrum objects and a list of spectrum match tuples and n, the maximum number of neighbours (matches) each spectrum
+    """Pass a list of Spectrum objects, a list of spectral matching tuples and n, the maximum number of neighbours (matches) each spectrum
     can have. If a spectrum has more than n neighbours, the matches with the lowest cosine score are removed until there are only n remaining.
     Returns the filtered list of spectral matches"""
     for spectrum in spectra_list:
+        #new list to store neighbours
         neighbours=[]
+
         for m in matches:
             if spectrum == m[0] or spectrum == m[1]:
                 neighbours.append(m)
-        # print(f"{spectrum}:\t{neighbours}")
-        if len(neighbours)>n:
+        if len(neighbours)>n: #number of neighbours higher than given threshold
+            #sort descending
             neighbours.sort(reverse=True,key=lambda tuple: tuple[2])
-            # print(f"sorted: {neighbours}")
-            to_remove=neighbours[n:]
-            # print(to_remove)
-            for r in to_remove:
-                matches.remove(r)
+
+            #remove spectral matches so matches up to n are kept
+            for R in neighbours[n:]:
+                matches.remove(R)
             
     return matches
             
@@ -323,6 +355,7 @@ def filter_family(matches,spectra,n):
     return matches
 
 
+
 def main(file_path):
     """Give mgf file path as argument.
     Returns a list of spectrum pairs, showing the two spectrum IDs, the cosine similarity score of each pair and number of matched peaks"""
@@ -353,7 +386,7 @@ def main(file_path):
     graph=make_graph(spectra_list,spectra_matches)
 
     nx.write_graphml(graph, "filtered_graph.graphml")
-    # return spectra_matches
+    return spectra_matches
 
 ##to use from command line by giving path to mgf file as argument
 #if __name__ == "__main__":
@@ -368,43 +401,5 @@ pairs=main(".\example_data\MS2_peaks.mgf")
 end = time.ctime()
 #print start and end time of program running
 print(f"start: {start}\nend: {end}")
-
-#test graph:
-# graph=nx.Graph()
-# graph.add_edge(1,2,weight=0.5)
-# graph.add_edge(1,3,weight=1)
-# graph.add_edge(1,4,weight=0.2)
-# graph.add_edge(2,5,weight=0.35)
-# graph.add_edge(5,9,weight=0.4)
-# graph.add_edge(6,7,weight=0.86)
-# graph.add_edge(7,8,weight=0.9)
-# graph.add_edge(6,8,weight=0.64)
-# graph.add_node(10,color='red')
-
-
-#testing get_family
-# s1=Spectrum()
-# s2=Spectrum()
-# s3=Spectrum()
-# s4=Spectrum()
-# s5=Spectrum()
-# s6=Spectrum()
-# s7=Spectrum()
-# s8=Spectrum()
-# s9=Spectrum()
-
-# s1.feature_id="1"
-# s2.feature_id="2"
-# s3.feature_id="3"
-# s4.feature_id="4"
-# s5.feature_id="5"
-# s6.feature_id="6"
-# s7.feature_id="7"
-# s8.feature_id="8"
-# s9.feature_id="9"
-
-# pairs=[(s1,s2,0.9),(s1,s3,0.5),(s1,s4,0.4),(s2,s5,0.3),(s5,s9,0.6),(s6,s7,0.3),(s7,s8,0.9),(s6,s8,0.8)]
-# # print(get_family(pairs,s1))
-# filter_family(pairs,[s1,s2,s3,s4,s5,s6,s7,s8,s9],3)
 
 
