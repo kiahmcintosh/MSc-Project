@@ -320,7 +320,7 @@ def make_graph(nodes,edges):
 
 
 
-    #old funtion using lists
+    #old function using lists
     # graph=nx.Graph()
     # for node in nodes_list:
     #     
@@ -330,70 +330,116 @@ def make_graph(nodes,edges):
 
     return graph
 
-def filter_neighbours(spectra_list,matches,n):
-    """Pass a list of Spectrum objects, a list of spectral matching tuples and n, the maximum number of neighbours (matches) each spectrum
-    can have. If a spectrum has more than n neighbours, the matches with the lowest cosine score are removed until there are only n remaining.
-    Returns the filtered list of spectral matches"""
-    for spectrum in spectra_list:
-        #new list to store neighbours
-        neighbours=[]
+def filter_neighbors(graph,M):
+    for node in nx.nodes(graph):
 
-        for m in matches:
-            if spectrum == m[0] or spectrum == m[1]:
-                neighbours.append(m)
-        if len(neighbours)>n: #number of neighbours higher than given threshold
-            #sort descending
-            neighbours.sort(reverse=True,key=lambda tuple: tuple[2])
+        #sort edges conntecting to query node by descending cosine score
+        edges = sorted(graph.edges(node,data=True), key=lambda x: x[2]['cosine'],reverse=True)
 
-            #remove spectral matches so matches up to n are kept
-            for R in neighbours[n:]:
-                matches.remove(R)
-            
-    return matches
-            
-def get_family(matches,spectrum,family_list,family_matches):
-    if spectrum not in family_list:
-        family_list.append(spectrum)
+        if len(edges)>M: #if too many neighbours i.e. connecting edges
+            graph.remove_edges_from(edges[M:]) #remove edges from lowest cosine score end of list
     
-    neighbours=[]
-    for m in matches:
-        if spectrum == m[0]:
-            neighbours.append(m[1])
-            if m not in family_matches:
-                family_matches.append(m)
+    return graph
 
-        elif spectrum == m[1]:
-            neighbours.append(m[0])
-            if m not in family_matches:
-                family_matches.append(m)
+def filter_family(graph, M):
+    used=[]
+    for node in nx.nodes(graph):
+        if node in used:
+            # print(f"\nnode {node} already used")
+            continue
 
-    for n in neighbours:
-        if n not in family_list:
-            family_list.append(n)
-            family_list,family_matches=get_family(matches,n,family_list,family_matches)
-    
-    return family_list,family_matches
+        while True:
+            family=nx.node_connected_component(graph,node)
+            # print("\n",family)
+            # print(f"\n{node}\t{family}\t{len(family)}")
 
-def filter_family(matches,spectra,n):
-    used_spectra=[]
-    for s in spectra:
-        if s not in used_spectra:
-            while True:
+            if len(family)>M:
+                edges = sorted(graph.edges(family,data=True), key=lambda x: x[2]['cosine'],reverse=True)
+                # print(edges)
+                while True:
+                    remove=edges[-1]
+                    edges=edges[:-1]
+                    # print("remove: ",remove)
+                    # family.remove(remove[1])
+                    # print(family)
+                    graph.remove_edge(remove[0],remove[1])
+                    
+                    # print(remove[0],"\t",remove[1],"\t",nx.has_path(graph,remove[0],remove[1]))
+                    if not nx.has_path(graph,remove[0],remove[1]):
+                        break
+                
+                continue
+                
+            for F in family:
+                used.append(F)
+            break
 
-                family,f_pairs=get_family(matches,s,[],[])
+    return graph
+        
 
-                if len(family)<=n:
-                    break
 
-                f_pairs.sort(key=lambda tuple: tuple[2])
-                matches.remove(f_pairs[0])
+# def filter_neighbours(spectra_list,matches,n):
+#     """Pass a list of Spectrum objects, a list of spectral matching tuples and n, the maximum number of neighbours (matches) each spectrum
+#     can have. If a spectrum has more than n neighbours, the matches with the lowest cosine score are removed until there are only n remaining.
+#     Returns the filtered list of spectral matches"""
+#     for spectrum in spectra_list:
+#         #new list to store neighbours
+#         neighbours=[]
+
+#         for M in matches:
+#             if spectrum == M[0] or spectrum == M[1]:
+#                 neighbours.append(M)
+#         if len(neighbours)>n: #number of neighbours higher than given threshold
+#             #sort descending
+#             neighbours.sort(reverse=True,key=lambda tuple: tuple[2])
+
+#             #remove spectral matches so matches up to n are kept
+#             for R in neighbours[n:]:
+#                 matches.remove(R)
             
-            for f in family:
-                used_spectra.append(f)
+#     return matches
+            
+# def get_family(matches,spectrum,family_list,family_matches):
+#     if spectrum not in family_list:
+#         family_list.append(spectrum)
     
-    return matches
+#     neighbours=[]
+#     for m in matches:
+#         if spectrum == m[0]:
+#             neighbours.append(m[1])
+#             if m not in family_matches:
+#                 family_matches.append(m)
 
+#         elif spectrum == m[1]:
+#             neighbours.append(m[0])
+#             if m not in family_matches:
+#                 family_matches.append(m)
 
+#     for n in neighbours:
+#         if n not in family_list:
+#             family_list.append(n)
+#             family_list,family_matches=get_family(matches,n,family_list,family_matches)
+    
+#     return family_list,family_matches
+
+# def filter_family(matches,spectra,n):
+#     used_spectra=[]
+#     for s in spectra:
+#         if s not in used_spectra:
+#             while True:
+
+#                 family,f_pairs=get_family(matches,s,[],[])
+
+#                 if len(family)<=n:
+#                     break
+
+#                 f_pairs.sort(key=lambda tuple: tuple[2])
+#                 matches.remove(f_pairs[0])
+        
+#             for f in family:
+#                 used_spectra.append(f)
+    
+#     return matches
 
 def main(file_path):
     """Give mgf file path as argument.
@@ -411,32 +457,38 @@ def main(file_path):
     print("calculating cosine scores")
     spectra_matches=calc_similarities(spectra_list,modified=True,precursor_tolerance=400)
 
-
     #testing loops over nested dictionary
     # for key in spectra_matches:
     #     for k in spectra_matches[key]:
     #         print(spectra_matches[key][k][0])
         
-
     #filter matches
     print("filtering spectrum matches")
     spectra_matches=filter_pairs(spectra_matches)
-    print(spectra_matches)
+    # print(spectra_matches)
 
+    # using old methods -------------------------------------------
     # print("filtering neighbours")
     # spectra_matches=filter_neighbours(spectra_list,spectra_matches,10)
 
     # print("filtering family size")
     # spectra_matches=filter_family(spectra_matches,spectra_list,100)
 
-    # print("making graph")
-    # graph=make_graph(spectra_list,spectra_matches)
+    # return spectra_matches
+    #--------------------------------------------------------------
 
-    
-        
+
+    print("making graph")
+    graph=make_graph(spectra_list,spectra_matches)
+
+    print("filtering neighbours")
+    graph=filter_neighbors(graph,10)
+
+    print("filtering family size")
+    graph=filter_family(graph,100)
 
     nx.write_graphml(graph, "dictionary_graph.graphml")
-    return spectra_matches
+    
 
 ##to use from command line by giving path to mgf file as argument
 #if __name__ == "__main__":
