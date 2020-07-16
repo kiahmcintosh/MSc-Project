@@ -1,9 +1,9 @@
 import networkx as nx
 import bisect
-import network
-from Peak import Peak
-from Spectrum import Spectrum
-import read_mgf as mgf
+from . import network
+from .Peak import Peak
+from .Spectrum import Spectrum
+from . import read_mgf as mgf
 
 
 def compare_all(spectra_list,fragment_tolerance=0.3, modified=False,precursor_tolerance=1.0):

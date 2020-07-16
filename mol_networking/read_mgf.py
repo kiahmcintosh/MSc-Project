@@ -1,4 +1,4 @@
-from Spectrum import Spectrum
+from .Spectrum import Spectrum
 
 def read_mgf(file_path):
     """Takes the path to a .mgf file. Returns a list of Spectrum objects, each containing the attributes contained in the

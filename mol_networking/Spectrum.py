@@ -1,5 +1,5 @@
 import numpy
-from Peak import Peak
+from .Peak import Peak
 from functools import total_ordering
 
 @total_ordering

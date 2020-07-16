@@ -1,18 +1,12 @@
-# import math
-# import numpy
-# import sys
-# import networkx as nx
-# from functools import total_ordering
-# import bisect
-import network
-import similarity
-import read_mgf as mgf
+from mol_networking import network, similarity
+from mol_networking import read_mgf as mgf
+import matchms
 
 def main(file_path):
 
     #make list of spectrum objects from mgf file
     print("reading file")
-    spectra_list=mgf.read_mgf(file_path)[200:400]
+    spectra_list=mgf.read_mgf(file_path)[200:300]
    
     #match to library file to add names to spectra objects
     print("comparing to library")
@@ -38,20 +32,11 @@ def main(file_path):
     network.write_graphml(graph, "subset_network.graphml")
     
 
-##to use from command line by giving path to mgf file as argument
-#if __name__ == "__main__":
-#    main(sys.argv[1])
-
-
 import time
 start = time.time()
 
 pairs=main(".\data\MS2_peaks.mgf")
 
 elapsed = time.time()-start
-#print start and end time of program running
+#print time of program running
 print(time.strftime("\nelapsed time:\t%H:%M:%S", time.gmtime(elapsed)))
-
-
-
-
