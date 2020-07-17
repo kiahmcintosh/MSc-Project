@@ -14,7 +14,7 @@ def compare_all(spectra_list,fragment_tolerance=0.3, modified=False,precursor_to
     # spectra_matches=[]
 
     #dictionary to store spectral matches
-    dict = {}   
+    matches = {}   
     
     for i in range(0,len(spectra_list)):
         spectrum_one=spectra_list[i]
@@ -34,17 +34,17 @@ def compare_all(spectra_list,fragment_tolerance=0.3, modified=False,precursor_to
             # spectra_matches.append(spectrum_match)
 
             #add spectral match to dictionary
-            if spectrum_one not in dict:
-                dict[spectrum_one]={}
-            dict[spectrum_one][spectrum_two]={'cosine':score,'peaks':peak_count}
+            if spectrum_one not in matches:
+                matches[spectrum_one]={}
+            matches[spectrum_one][spectrum_two]={'cosine':score,'peaks':peak_count}
 
-            if spectrum_two not in dict:
-                dict[spectrum_two]={}
-            dict[spectrum_two][spectrum_one]={'cosine':score,'peaks':peak_count}
+            if spectrum_two not in matches:
+                matches[spectrum_two]={}
+            matches[spectrum_two][spectrum_one]={'cosine':score,'peaks':peak_count}
             
             
     
-    return dict
+    return matches
     # return spectra_matches
 
 def cosine_score_greedy(spectrum_one, spectrum_two, fragment_tolerance=0.3, modified=False,precursor_tolerance=1.0):
@@ -170,16 +170,6 @@ def filter_pairs(pairs,cosine_threshold=0.7,peak_threshold=6):
     for spectrum in pairs:
         if bool(pairs[spectrum]):
             filtered_pairs[spectrum]=pairs[spectrum]
-            
-    # print(filtered_pairs)
-    
-
-    ## old method for with list
-    # filtered_pairs={}
-    # for pair in pairs:
-    #     #only keep spectra matches with cosine >0.7 and at least 6 matching peaks
-    #     if pair[2]>=0.7 and pair[3]>=6:
-    #         filtered_pairs.append(pair)
             
     return filtered_pairs
 

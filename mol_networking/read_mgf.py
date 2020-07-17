@@ -25,20 +25,10 @@ def read_mgf(file_path):
                 #extract parameter values and assign to attributes
                 if "=" in i:
                     parameter,value = i.split("=",1)
-                    if "feature_id".casefold() in parameter.casefold():
+                    if "scans".casefold() in parameter.casefold():
                         spectrum.set_peak_id(value)
                     elif "pepmass".casefold() in parameter.casefold():
                         spectrum.pep_mass = float(value)
-                    # elif "scans".casefold() in parameter.casefold():
-                    #     spectrum.scans = float(value)
-                    # elif "RTinseconds".casefold() in parameter.casefold():
-                    #     spectrum.retention_time = float(value)
-                    # elif "charge".casefold() in parameter.casefold():
-                    #     spectrum.charge = value
-                    # elif "mslevel".casefold() in parameter.casefold():
-                    #     spectrum.ms_level = int(value)
-                    # elif "name".casefold() in parameter.casefold():
-                    #     spectrum.name=value
 
                     spectrum.parameters[parameter]=value
 

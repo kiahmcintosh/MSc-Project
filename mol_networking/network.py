@@ -7,14 +7,14 @@ def make_network(nodes,edges):
     for N in nodes:
         network.add_node(N)
         attributes[N]={}
-        for P in N.parameters:
-            attributes[N][P]=N.parameters[P]
-
+        if hasattr(N,'parameters'):
+            for P in N.parameters:
+                attributes[N][P]=N.parameters[P]
+        
         if hasattr(N, 'library_parameters'):
             network.add_node(N,library_match=True)
             for L in N.library_parameters:
                 attributes[N]["".join(["library_",L])]=N.library_parameters[L]
-            print(attributes[N])
         else:
             network.add_node(N,library_match=False)
           
@@ -42,8 +42,6 @@ def filter_family(graph, M):
 
         while True:
             family=nx.node_connected_component(graph,node)
-            # print("\n",family)
-            # print(f"\n{node}\t{family}\t{len(family)}")
 
             if len(family)>M:
                 edges = sorted(graph.edges(family,data=True), key=lambda x: x[2]['cosine'],reverse=True)
@@ -51,12 +49,8 @@ def filter_family(graph, M):
                 while True:
                     remove=edges[-1]
                     edges=edges[:-1]
-                    # print("remove: ",remove)
-                    # family.remove(remove[1])
-                    # print(family)
                     graph.remove_edge(remove[0],remove[1])
                     
-                    # print(remove[0],"\t",remove[1],"\t",nx.has_path(graph,remove[0],remove[1]))
                     if not nx.has_path(graph,remove[0],remove[1]):
                         break
                 
