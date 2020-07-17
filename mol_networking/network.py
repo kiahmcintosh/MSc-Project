@@ -2,14 +2,25 @@ import networkx as nx
 
 def make_network(nodes,edges):
 
-    graph=nx.Graph(edges)
+    network=nx.Graph(edges)
+    attributes={}
     for N in nodes:
-        if hasattr(N, 'name'):
-            graph.add_node(N,colour=1,ID=N.name)
-        else:
-            graph.add_node(N,colour=0)
+        network.add_node(N)
+        attributes[N]={}
+        for P in N.parameters:
+            attributes[N][P]=N.parameters[P]
 
-    return graph
+        if hasattr(N, 'library_parameters'):
+            network.add_node(N,library_match=True)
+            for L in N.library_parameters:
+                attributes[N]["".join(["library_",L])]=N.library_parameters[L]
+            print(attributes[N])
+        else:
+            network.add_node(N,library_match=False)
+          
+    nx.set_node_attributes(network,attributes)
+
+    return network
 
 def filter_neighbors(graph,M):
     for node in nx.nodes(graph):

@@ -37,8 +37,8 @@ def read_mgf(file_path):
                     #     spectrum.charge = value
                     # elif "mslevel".casefold() in parameter.casefold():
                     #     spectrum.ms_level = int(value)
-                    elif "name".casefold() in parameter.casefold():
-                        spectrum.name=value
+                    # elif "name".casefold() in parameter.casefold():
+                    #     spectrum.name=value
 
                     spectrum.parameters[parameter]=value
 

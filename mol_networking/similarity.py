@@ -195,11 +195,11 @@ def library_match(spectra_list,lib_mgf):
         for lib in library_sort[pos-2:pos+2]:
             score,peaks=cosine_score_max(test_spectra,lib,modified=False)
             if score>=0.7 and peaks>=3:
-                matches.append((score,peaks,lib.name))
+                matches.append((score,peaks,lib))
         
         if len(matches)>0:
             #sort possible library matches by cosine score
             matches.sort(reverse=True,key=lambda tuple: tuple[0])
-            #use name of match with highest cosine score
-            test_spectra.name=matches[0][2]
+            #use parameters of spectrum match with highest cosine score
+            test_spectra.library_parameters=lib.parameters
             
