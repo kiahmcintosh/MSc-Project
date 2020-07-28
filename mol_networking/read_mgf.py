@@ -25,12 +25,15 @@ def read_mgf(file_path):
                 #extract parameter values and assign to attributes
                 if "=" in i:
                     parameter,value = i.split("=",1)
-                    if "scans".casefold() in parameter.casefold():
-                        spectrum.set_peak_id(value)
-                    elif "pepmass".casefold() in parameter.casefold():
+                    # if "scans".casefold() in parameter.casefold():
+                    #     spectrum.set_id(value)
+                    if "pepmass".casefold() in parameter.casefold():
                         spectrum.pep_mass = float(value)
 
                     spectrum.parameters[parameter]=value
+                    spectrum.set_id()
+
+                    
 
                 #when it reaches a line with no '=' then it is one of the peaks, which is added to the spectrum
                 else:
@@ -38,7 +41,8 @@ def read_mgf(file_path):
                     mass = float(mass)
                     intensity = float(intensity)
                     spectrum.add_peak(mass, intensity)
-
+            
+            spectrum.set_id
             #intensities scaled by Euclidean norm
             spectrum.euclidean_scale()
 

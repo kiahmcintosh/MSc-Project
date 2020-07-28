@@ -9,7 +9,7 @@ def make_network(nodes,edges):
         attributes[N]={}
         if hasattr(N,'parameters'):
             for P in N.parameters:
-                attributes[N][P]=N.parameters[P]
+                attributes[N][P]=str(N.parameters[P])
         
         if hasattr(N, 'library_parameters'):
             network.add_node(N,library_match=True)

@@ -8,5 +8,5 @@ class Peak:
         self.sqrt_intensity = math.sqrt(self.intensity)
     
     def __repr__(self):
-        # return f"{self.__class__.__name__}({self.mass},{self.intensity})"
-        return str(self.mass)
+        return f"{self.__class__.__name__}({self.mass},{self.intensity})"
+        # return str(self.mass)

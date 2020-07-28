@@ -5,7 +5,7 @@ from matchms.filtering import default_filters
 from matchms.filtering import normalize_intensities
 from matchms import calculate_scores
 from matchms.similarity import CosineGreedy
-from mol_networking.matchms import convert_matches as con
+from mol_networking.use_matchms import convert_matches as convert
 import networkx as nx
 from mol_networking import read_mgf as mgf
 import matchms
@@ -45,18 +45,39 @@ def test_matchms():
     #         print(f"Number of matching peaks: {n_matching}")
     #         print("----------------------------")
 
-    matches=con.convert_to_dictionary(scores)
+   
+   
+    matches=convert.convert_scores(scores)
+    nodes=[]
+    for s in spectrums:
+        nodes.append(convert.convert_spectrum(s))
+
     print("filtering spectrum matches")
     matches=similarity.filter_pairs(matches)
     print("making graph")
-    graph=nx.Graph(matches)
+    graph=network.make_network(nodes,matches)
+    # graph=nx.Graph(matches)
+    # graph.add_nodes_from(nodes)
+
+    # graph=nx.Graph(matches)
+    # attributes={}
+    # for N in nodes:
+    #     graph.add_node(N)
+    #     attributes[N]={}
+    #     if hasattr(N,'parameters'):
+    #         for P in N.parameters:
+    #             print(f"{P}:\t{N.parameters[P]}")
+    #             # attributes[N][P]=N.parameters[P]
+    #     break
+    # nx.set_node_attributes(graph,attributes)
+    
     print("filtering neighbours")
     graph=network.filter_neighbors(graph,3)
 
     print("filtering family size")
     graph=network.filter_family(graph,5)
 
-    output="matchms_filtered_network.graphml"
+    output="pesticides_matchms_network.graphml"
     network.write_graphml(graph, output)
     print(f"written to {output}")
 
@@ -66,16 +87,17 @@ def main(file_path,output_file):
     #make list of spectrum objects from mgf file
     print("reading file")
     spectra_list=mgf.read_mgf(file_path)
+    print(len(spectra_list))
    
     #match to library file to add names to spectra objects
-    # print("comparing to library")
-    # similarity.library_match(spectra_list,".\massbank_library\MASSBANK.mgf")
+    print("comparing to library")
+    similarity.library_match(spectra_list,".\massbank_library\MASSBANK.mgf")
     
     #calculate modified cosines, comparing each spectrum to every other spectrum
     print("calculating cosine scores")
     spectra_matches=similarity.compare_all(spectra_list,modified=True,precursor_tolerance=400)
         
-    #filter matches
+    # #filter matches
     print("filtering spectrum matches")
     spectra_matches=similarity.filter_pairs(spectra_matches)
 
@@ -95,9 +117,9 @@ def main(file_path,output_file):
 import time
 start = time.time()
 
-# main(".\data\MS2_peaks.mgf","attributes_network.graphml")
-main(".\matchms\\tests\\pesticides.mgf","matchms_filtered_out.graphml")
-test_matchms()
+# main(".\data\MS2_peaks.mgf","beer_network.graphml")
+main(".\matchms\\tests\\pesticides.mgf","pesticides_my_network.graphml")
+# test_matchms()
 
 elapsed = time.time()-start
 #print time of program running

@@ -24,8 +24,8 @@ class Spectrum:
     def add_peak(self,mass, intensity):
         self.peaks.append(Peak(mass,intensity))
     
-    def set_peak_id(self,feature_id):
-        self.feature_id = feature_id
+    # def set_peak_id(self,feature_id):
+    #     self.feature_id = feature_id
 
     def euclidean_scale(self):
         """Scales the intensity of each Peak object using Euclidean norm"""
@@ -41,3 +41,7 @@ class Spectrum:
         #set each peak's scaled intensity
         for peak in self.peaks:
             peak.norm_scaled=(peak.sqrt_intensity)/norm
+
+    def set_id(self):
+        if 'SCANS' in self.parameters:
+            self.feature_id=self.parameters['SCANS']
