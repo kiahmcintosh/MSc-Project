@@ -18,7 +18,6 @@ def convert_scores(scores):
         query=query.metadata['scans']
 
 
-
         if reference not in matches:
             matches[reference]={}
         matches[reference][query]={'cosine':score,'peaks':n_matching}
@@ -40,6 +39,9 @@ def convert_spectrum(matchms_spectrum):
         spectrum.add_peak(mz[i],intensities[i])
 
     spectrum.parameters=matchms_spectrum.metadata
+
+    if hasattr(matchms_spectrum,'library_parameters'):
+        spectrum.library_parameters=matchms_spectrum.library_parameters
 
     if "pepmass" in spectrum.parameters:
         if  isinstance(spectrum.parameters['pepmass'],tuple):

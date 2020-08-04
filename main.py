@@ -13,7 +13,9 @@ import matchms
 
 def test_matchms():
     # Read spectrums from a MGF formatted file, for other formats see https://matchms.readthedocs.io/en/latest/api/matchms.importing.html
-    file = load_from_mgf(".\matchms\\tests\\pesticides.mgf")
+    # file = load_from_mgf(".\matchms\\tests\\pesticides.mgf")
+    file = load_from_mgf(".\data\\beer_subset.mgf")
+
 
     # Apply filters to clean and enhance each spectrum
     spectrums = []
@@ -22,8 +24,10 @@ def test_matchms():
         # Default filter is fully explained at https://matchms.readthedocs.io/en/latest/api/matchms.filtering.html .
         # spectrum = default_filters(spectrum)
         # Scale peak intensities to maximum of 1
-        spectrum = normalize_intensities(spectrum)
-        spectrums.append(spectrum)
+        spectrum2 = normalize_intensities(spectrum)
+        spectrums.append(spectrum2)
+
+    print(spectrums[-1].peaks.intensities)
 
     # Calculate Cosine similarity scores between all spectrums
     # For other similarity score methods see https://matchms.readthedocs.io/en/latest/api/matchms.similarity.html .
@@ -77,9 +81,9 @@ def test_matchms():
     print("filtering family size")
     graph=network.filter_family(graph,5)
 
-    output="pesticides_matchms_network.graphml"
-    network.write_graphml(graph, output)
-    print(f"written to {output}")
+    # output="pesticides_matchms_network.graphml"
+    # network.write_graphml(graph, output)
+    # print(f"written to {output}")
 
 
 def main(file_path,output_file):
@@ -110,15 +114,15 @@ def main(file_path,output_file):
     print("filtering family size")
     graph=network.filter_family(graph,5)
 
-    network.write_graphml(graph, output_file)
-    print(f"written to {output_file}")
+    # network.write_graphml(graph, output_file)
+    # print(f"written to {output_file}")
     
 
 import time
 start = time.time()
 
 # main(".\data\MS2_peaks.mgf","beer_network.graphml")
-main(".\matchms\\tests\\pesticides.mgf","pesticides_my_network.graphml")
+# main(".\matchms\\tests\\pesticides.mgf","pesticides_my_network.graphml")
 # test_matchms()
 
 elapsed = time.time()-start

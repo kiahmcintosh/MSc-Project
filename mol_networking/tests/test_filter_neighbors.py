@@ -1,8 +1,3 @@
-# import os,sys,inspect
-# current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-# parent_dir = os.path.dirname(current_dir)
-# sys.path.insert(0, parent_dir) 
-
 from mol_networking import network
 import networkx as nx
 
@@ -17,10 +12,4 @@ def test_filter_neighbors():
     assert len(neighbors) == 3, "Incorrect number of neighbors"
     assert neighbors == [(1,3),(1,4),(1,5)], "Expected different neighbors"
     
-
-test_filter_neighbors()    
-
-
-
-
-    
+   
