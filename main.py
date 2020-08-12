@@ -14,7 +14,7 @@ import matchms
 def test_matchms():
     # Read spectrums from a MGF formatted file, for other formats see https://matchms.readthedocs.io/en/latest/api/matchms.importing.html
     # file = load_from_mgf(".\matchms\\tests\\pesticides.mgf")
-    file = load_from_mgf(".\data\\beer_subset.mgf")
+    file = load_from_mgf(".\matchms\\tests\pesticides.mgf")
 
 
     # Apply filters to clean and enhance each spectrum
@@ -81,9 +81,9 @@ def test_matchms():
     print("filtering family size")
     graph=network.filter_family(graph,5)
 
-    # output="pesticides_matchms_network.graphml"
-    # network.write_graphml(graph, output)
-    # print(f"written to {output}")
+    output="pesticides_matchms_network.graphml"
+    network.write_graphml(graph, output)
+    print(f"written to {output}")
 
 
 def main(file_path,output_file):
@@ -91,11 +91,16 @@ def main(file_path,output_file):
     #make list of spectrum objects from mgf file
     print("reading file")
     spectra_list=mgf.read_mgf(file_path)
+    spectra_list=spectra_list[:30]
     print(len(spectra_list))
    
     #match to library file to add names to spectra objects
-    print("comparing to library")
-    similarity.library_match(spectra_list,".\massbank_library\MASSBANK.mgf")
+    # print("comparing to library")
+    # similarity.library_match(spectra_list,".\massbank_library\MASSBANK.mgf")
+
+    print("MS1 t-test")
+    from mol_networking import compare_ms1
+    compare_ms1.samples_ttest("C:\\Users\\Kiah\\Documents\\Project\dummy_MS1.csv","C:\\Users\\Kiah\\Documents\\Project\\groups.csv",spectra_list)
     
     #calculate modified cosines, comparing each spectrum to every other spectrum
     print("calculating cosine scores")
@@ -114,16 +119,31 @@ def main(file_path,output_file):
     print("filtering family size")
     graph=network.filter_family(graph,5)
 
-    # network.write_graphml(graph, output_file)
-    # print(f"written to {output_file}")
+    network.write_graphml(graph, output_file)
+    print(f"written to {output_file}")
     
+def ms1(file_path,csv_file,groups_file):
+    from mol_networking import compare_ms1
+    print("reading file")
+    spectra_list=mgf.read_mgf(file_path)
+
+    compare_ms1.samples_ttest(csv_file,groups_file,spectra_list[:20])
+
+
+
+
+
+
+
 
 import time
 start = time.time()
 
-# main(".\data\MS2_peaks.mgf","beer_network.graphml")
+# main(".\data\MS2_peaks.mgf","ms1_test.graphml")
 # main(".\matchms\\tests\\pesticides.mgf","pesticides_my_network.graphml")
-# test_matchms()
+test_matchms()
+
+# ms1(".\data\MS2_peaks.mgf","C:\\Users\\Kiah\\Documents\\Project\dummy_MS1.csv","C:\\Users\\Kiah\\Documents\\Project\\groups.csv")
 
 elapsed = time.time()-start
 #print time of program running

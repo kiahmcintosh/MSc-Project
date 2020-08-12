@@ -1,5 +1,7 @@
 import argparse
-
+from mol_networking import similarity
+import time
+start = time.time()
 '''
 Usage:
     python molecular_networking.py .\data\MS2_peaks -o example -l .\massbank_library\MASSBANK
@@ -7,39 +9,40 @@ Usage:
 
 parser = argparse.ArgumentParser(
     description='Test input arguments.',
-    usage='%(prog)s <input-mgf> [options]')
+    usage='%(prog)s <input-mgf> [options]',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 
 parser.add_argument(
     'input',
-    help='input mgf file path and name, excluding \'.mgf\''
+    help='Input MGF file path and name, excluding \'.mgf\''
     )
 
 parser.add_argument(
     '-o',
     '--output',
-    help='output graphml name, excluding \'.graphml\'',
+    help='Output GraphML file path and name, excluding \'.graphml\'',
     default='output'
     )
 
 parser.add_argument(
     '-l',
     '--library',
-    help='library mgf file, excluding \'.mgf\''
+    help='Library mgf file path and name, excluding \'.mgf\''
     )
 
 parser.add_argument(
     '-lp',
     '--library-peaks',
-    help='number of peaks required to match a library spectrum',
+    help='Minimum number of peaks required to match a library spectrum',
     type=int,
     default=3
     )
 
 parser.add_argument(
-    '-lt',
-    '--library-threshold',
-    help='threshold similarity score required to match a library spectrum',
+    '-ls',
+    '--library-score',
+    help='Minimum similarity score required to match a library spectrum',
     type=float,
     default=0.7
     )
@@ -47,7 +50,7 @@ parser.add_argument(
 parser.add_argument(
     '-lpt',
     '--lib-precursor-tolerance',
-    help='tolerance of precursor mass allowed when matching to library spectra',
+    help='Precursor mass tolerance allowed when matching to library spectra',
     type=float,
     default=1.0
 )
@@ -59,15 +62,17 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--unmodified',
-    help='use unmodified cosine (default: use modified cosine when calculating similarities)',
-    action='store_true'
+    '-m',
+    '--modified',
+    help='Use modified cosine similarity scoring',
+    default=True,
+    type=bool
 )
 
 parser.add_argument(
-    '-mt',
-    '--modification-tolerance',
-    help='m/z tolerance when calculating the modification value between two spectra',
+    '-ma',
+    '--modification-mass',
+    help='Maximum modification mass allowed when calculating the modification value between two spectra',
     type=float,
     default=400.
 )
@@ -75,7 +80,7 @@ parser.add_argument(
 parser.add_argument(
     '-ft',
     '--fragment-tolerance',
-    help='m/z tolerance when comparing two fragment peaks',
+    help='Fragment tolerance when comparing two fragment peaks',
     type=float,
     default=0.1
 )
@@ -83,15 +88,15 @@ parser.add_argument(
 parser.add_argument(
     '-p',
     '--peaks',
-    help='number of matching peaks required to match a spectrum',
+    help='Minimum number of peaks required to match a spectrum',
     type=int,
     default=6
 )
 
 parser.add_argument(
-    '-t',
-    '--cosine-threshold',
-    help='threshold cosine score for a spectral match to be kept',
+    '-s',
+    '--score',
+    help='Minumum cosine score for a spectral match to be kept',
     type=float,
     default=0.7
 )
@@ -99,7 +104,7 @@ parser.add_argument(
 parser.add_argument(
     '-n',
     '--n-neighbours',
-    help='maximum number of neighbours a spectrum can have in the network',
+    help='Maximum number of neighbours a spectrum can have in the network',
     type=int,
     default=10
 )
@@ -107,14 +112,14 @@ parser.add_argument(
 parser.add_argument(
     '-f',
     '--family-size',
-    help='maximum molecular family size allowed in the network',
+    help='Maximum molecular family size allowed in the network',
     type=int,
     default=100
 )
 
 parser.add_argument(
     '--matchms',
-    help='use the matchms package for reading mgf file and calculating similarities',
+    help='use the MatchMS for reading mgf file and calculating similarities',
     action='store_true'
 )
 
@@ -147,7 +152,7 @@ if (args.matchms):
     if (args.library):
         from mol_networking.use_matchms import library_match as lib
         library_mgf=f'{args.library}.mgf'
-        lib.library_match(spectrums,library_mgf,precursor_tol=args.lib_precursor_tolerance,cosine=args.library_threshold,n_peaks=args.library_peaks)
+        lib.library_match(spectrums,library_mgf,precursor_tol=args.lib_precursor_tolerance,cosine=args.library_score,n_peaks=args.library_peaks)
         
 
     scores = calculate_scores(references=spectrums,
@@ -158,13 +163,15 @@ if (args.matchms):
     spectra_matches=convert.convert_scores(scores)
     spectra_list=[]
     for s in spectrums:
-        spectra_list.append(convert.convert_spectrum(s))
+        new = convert.convert_spectrum(s)
+        print(new.parameters)
+        spectra_list.append(new)
+    print(spectra_list[4].feature_id)
 
     
 
 else:
     from mol_networking import read_mgf as mgf
-    from mol_networking import similarity
 
     input_mgf=f'{args.input}.mgf'
     print(f"reading file {input_mgf}")
@@ -174,17 +181,19 @@ else:
     if (args.library):
         library_file=f'{args.library}.mgf'
         print("comparing to library")
-        similarity.library_match(spectra_list,library_file,precursor_tol=args.lib_precursor_tolerance,cosine=args.library_threshold,n_peaks=args.library_peaks)
+        similarity.library_match(spectra_list,library_file,precursor_tol=args.lib_precursor_tolerance,cosine=args.library_score,n_peaks=args.library_peaks)
 
     #calculate modified cosines, comparing each spectrum to every other spectrum
     print("calculating cosine scores")
-    spectra_matches=similarity.compare_all(spectra_list[:10],fragment_tolerance=args.fragment_tolerance,modified=not(args.unmodified),precursor_tolerance=args.modification_tolerance,greedy=args.greedy)
+    spectra_matches=similarity.compare_all(spectra_list,fragment_tolerance=args.fragment_tolerance,modified=args.modified,precursor_tolerance=args.modification_mass,greedy=args.greedy)
+
+    print(len(spectra_list))
 
 #filter matches
 print("filtering spectrum matches")
 spectra_matches=similarity.filter_pairs(
     spectra_matches,
-    cosine_threshold=args.cosine_threshold,
+    cosine_threshold=args.score,
     peak_threshold=args.peaks)
 
 
@@ -204,4 +213,7 @@ network.write_graphml(graph, output_file)
 print(f"written to {output_file}")
 
 
-
+elapsed = time.time()-start
+#print time of program running
+print(time.strftime("\nelapsed time:\t%H:%M:%S", time.gmtime(elapsed)))
+print("\n")
