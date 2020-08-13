@@ -35,8 +35,8 @@ def read_mgf(file_path):
 
                     
 
-                #when it reaches a line with no '=' then it is one of the peaks, which is added to the spectrum
-                else:
+                #when it reaches a line with no '=' and it's not an empty line then it is one of the peaks, which is added to the spectrum
+                elif i != "":                    
                     mass, intensity = i.split()
                     mass = float(mass)
                     intensity = float(intensity)
