@@ -10,14 +10,12 @@ def compare_all(spectra_list,fragment_tolerance=0.3, modified=False,precursor_to
     """takes a list of spectrum objects and calculates modified cosine for each spectrum matched with every other spectrum.
     returns a nested dictionary of spectrum matches with cosine score and number of matching peaks"""
 
-    #list for matched spectra to be stored
-    # spectra_matches=[]
-
     #dictionary to store spectral matches
     matches = {}   
     
     for i in range(0,len(spectra_list)):
         spectrum_one=spectra_list[i]
+        print(i)
         for j in range(i+1,len(spectra_list)):
             spectrum_two=spectra_list[j]
                             
@@ -26,15 +24,10 @@ def compare_all(spectra_list,fragment_tolerance=0.3, modified=False,precursor_to
                 score,peak_count=cosine_score_greedy(spectrum_one,spectrum_two,fragment_tolerance,modified,precursor_tolerance)
             else:
                 score,peak_count=cosine_score_max(spectrum_one,spectrum_two,fragment_tolerance,modified,precursor_tolerance)
-
-                
+    
             #if spectra don't match/precursor mass too far away, don't add to list
             if(score==0 and peak_count==0):
                 continue
-
-            #make tuple of spectra IDs,cosine score and number of matching peaks
-            # spectrum_match=(spectrum_one,spectrum_two,score,peak_count)
-            # spectra_matches.append(spectrum_match)
 
             #add spectral match to dictionary
             if spectrum_one not in matches:
@@ -48,7 +41,6 @@ def compare_all(spectra_list,fragment_tolerance=0.3, modified=False,precursor_to
             
     
     return matches
-    # return spectra_matches
 
 def cosine_score_greedy(spectrum_one, spectrum_two, fragment_tolerance=0.3, modified=False,precursor_tolerance=1.0):
     """takes two MS2 Spectrum objects and returns the cosine similarity score and number of matched peaks.
@@ -70,7 +62,7 @@ def cosine_score_greedy(spectrum_one, spectrum_two, fragment_tolerance=0.3, modi
 
             #check normal and modified peak masses
             if (abs(peak1.mass-peak2.mass)<=fragment_tolerance) or (abs(peak1.mass+modification-peak2.mass) <= fragment_tolerance):
-                product=(peak1.norm_scaled)*(peak2.norm_scaled)
+                product=(peak1.scaled_intensity)*(peak2.scaled_intensity)
                 tuple = (peak1, peak2, product)
                 #add to list of peak pairs
                 peak_pairs.append(tuple)
@@ -130,7 +122,7 @@ def cosine_score_max(spectrum_one, spectrum_two, fragment_tolerance=0.3, modifie
 
             #check normal and modified peak masses
             if (abs(peak1.mass-peak2.mass)<=fragment_tolerance) or (abs(peak1.mass+modification-peak2.mass) <= fragment_tolerance):
-                product=(peak1.norm_scaled)*(peak2.norm_scaled)
+                product=(peak1.scaled_intensity)*(peak2.scaled_intensity)
                 tuple = (peak1, peak2, product)
                 #add to list of peak pairs
                 peak_pairs.append(tuple)

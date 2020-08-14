@@ -37,7 +37,7 @@ class Spectrum:
 
         #set each peak's scaled intensity
         for peak in self.peaks:
-            peak.norm_scaled=(peak.sqrt_intensity)/norm
+            peak.scaled_intensity=(peak.sqrt_intensity)/norm
 
     def set_id(self):
         if 'SCANS' in self.parameters:
