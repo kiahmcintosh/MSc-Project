@@ -37,21 +37,22 @@ def samples_ttest(file_path,sample_groups_file,spectra_list):
     with open(file_path) as csvfile:
         reader=csv.DictReader(csvfile)
         for row in reader:
-            
+
             list1=[]
             for sample in group1:
                 result=[float(value) for key,value in row.items() if str(sample) in key and 'area' in key]
                 if len(result)==1:
                     list1.append(result[0])
                 elif len(result)==0:
-                    print(f"{sample}:\tNo MS1 peak area found")
-                else:
-                    print(f"{sample}:\t1 peak area required for sample")
+                    print(f"No MS1 peak area found for sample {sample}")
 
             list2=[]
             for sample in group2:
                 result=[float(value) for key,value in row.items() if str(sample) in key and 'area' in key]
-                list2.append(result[0])
+                if len(result)==1:
+                    list2.append(result[0])
+                elif len(result)==0:
+                    print(f"No MS1 peak area found for sample {sample}")
             
             statistic,p_value = stats.ttest_ind(list1,list2)
             if p_value<=0.05:
@@ -82,7 +83,9 @@ def samples_ttest(file_path,sample_groups_file,spectra_list):
                 for S in spectra_list[i:]:
                     if S.parameters['SCANS'] == row_ID:
                         # print(f"row: {row_ID}\tspectrum: {S.parameters['SCANS']}")
-                        S.parameters['ttest']=greater
+                        S.parameters['greater_group']=greater
+                        S.parameters['tstatistic']=statistic
+                        S.parameters['p_value']=p_value
                         # print(f"sample: {S}\tgreater: {greater}")
                         added=True
                         break

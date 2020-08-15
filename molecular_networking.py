@@ -3,8 +3,67 @@ from mol_networking import similarity
 import time
 start = time.time()
 '''
-Usage:
+Script to run MSMolNet from a command line
+
+
+Example usage:
     python molecular_networking.py .\data\MS2_peaks -o example -l .\massbank_library\MASSBANK
+
+
+
+usage: molecular_networking.py <input-mgf> [options]
+
+Test input arguments.
+
+positional arguments:
+  input                 Input MGF file path and name, excluding '.mgf'
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUTPUT, --output OUTPUT
+                        Output GraphML file path and name, excluding
+                        '.graphml' (default: output)
+  -l LIBRARY, --library LIBRARY
+                        Library mgf file path and name, excluding '.mgf'
+                        (default: None)
+  -lp LIBRARY_PEAKS, --library-peaks LIBRARY_PEAKS
+                        Minimum number of peaks required to match a library
+                        spectrum (default: 3)
+  -ls LIBRARY_SCORE, --library-score LIBRARY_SCORE
+                        Minimum similarity score required to match a library
+                        spectrum (default: 0.7)
+  -lpt LIB_PRECURSOR_TOLERANCE, --lib-precursor-tolerance LIB_PRECURSOR_TOLERANCE
+                        Precursor mass tolerance allowed when matching to
+                        library spectra (default: 1.0)
+  --greedy              Use the fast greedy method of similarity scoring.
+                        Default will use maximum weighted method (default:
+                        False)
+  -m MODIFIED, --modified MODIFIED
+                        Use modified cosine similarity scoring (default: True)
+  -ma MODIFICATION_MASS, --modification-mass MODIFICATION_MASS
+                        Maximum modification mass allowed when calculating the
+                        modification value between two spectra (default:
+                        400.0)
+  -ft FRAGMENT_TOLERANCE, --fragment-tolerance FRAGMENT_TOLERANCE
+                        Fragment tolerance when comparing two fragment peaks
+                        (default: 0.1)
+  -p PEAKS, --peaks PEAKS
+                        Minimum number of peaks required to match a spectrum
+                        (default: 6)
+  -s SCORE, --score SCORE
+                        Minumum cosine score for a spectral match to be kept
+                        (default: 0.7)
+  -n N_NEIGHBOURS, --n-neighbours N_NEIGHBOURS
+                        Maximum number of neighbours a spectrum can have in
+                        the network (default: 10)
+  -f FAMILY_SIZE, --family-size FAMILY_SIZE
+                        Maximum molecular family size allowed in the network
+                        (default: 100)
+  --matchms             use the MatchMS for reading mgf file and calculating
+                        similarities (default: False)
+  --ms1 MS1 MS1         Do t-test on MS1 data. Requires a .csv file of peak
+                        area in each sample for each spectrum and a .csv file
+                        with columns "sample" and "group" (default: None)
 '''
 
 parser = argparse.ArgumentParser(
@@ -123,14 +182,22 @@ parser.add_argument(
     action='store_true'
 )
 
+parser.add_argument(
+    '--ms1',
+    help='''Do t-test on MS1 data. Requires a .csv file of peak area in each sample for each spectrum 
+    and a .csv file with columns "sample" and "group"''',
+    nargs=2
+    
+)
+
 
 args = parser.parse_args()
 # print(args.accumulate(args.integers))
 print(args)
 
 if (args.matchms):
-    print('usematchms')
-    # import matchms
+    print('use matchms')
+    import matchms
     from matchms.importing import load_from_mgf
     from matchms.filtering import default_filters
     from matchms.filtering import normalize_intensities
@@ -139,8 +206,10 @@ if (args.matchms):
     from mol_networking.use_matchms import convert_matches as convert
     
     input_mgf=f'{args.input}.mgf'
+    print(f"reading file {inout_mgf}")
     file=load_from_mgf(input_mgf)
 
+    print("normalising intensities")
     # Apply filters to clean and enhance each spectrum
     spectrums = []
     for spectrum in file:
@@ -188,6 +257,10 @@ else:
     spectra_matches=similarity.compare_all(spectra_list,fragment_tolerance=args.fragment_tolerance,modified=args.modified,precursor_tolerance=args.modification_mass,greedy=args.greedy)
 
     print(len(spectra_list))
+
+if (args.ms1):
+    from mol_networking import ms1_analysis
+    ms1_analysis.samples_ttest(args.ms1[0],args.ms1[1],spectra_list)
 
 #filter matches
 print("filtering spectrum matches")
