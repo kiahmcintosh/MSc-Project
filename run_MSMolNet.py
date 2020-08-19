@@ -7,7 +7,7 @@ Script to run MSMolNet from a command line
 
 
 Example usage:
-    python molecular_networking.py .\data\MS2_peaks -o example -l .\massbank_library\MASSBANK
+    python molecular_networking.py <input_file> -o example_output -l <library_file>
 
 
 
@@ -201,21 +201,25 @@ if (args.matchms):
     from matchms.importing import load_from_mgf
     from matchms.filtering import default_filters
     from matchms.filtering import normalize_intensities
+    from matchms.filtering import add_precursor_mz
     from matchms import calculate_scores
     from matchms.similarity import ModifiedCosine
     from mol_networking.use_matchms import convert_matches as convert
     
     input_mgf=f'{args.input}.mgf'
-    print(f"reading file {inout_mgf}")
+    print(f"reading file {input_mgf}")
     file=load_from_mgf(input_mgf)
+    print(file)
 
     print("normalising intensities")
+    
     # Apply filters to clean and enhance each spectrum
     spectrums = []
     for spectrum in file:
         spectrum = default_filters(spectrum)
         # Scale peak intensities to maximum of 1
         spectrum = normalize_intensities(spectrum)
+        print(spectrum.get('precursor_mz'))
         spectrums.append(spectrum)
 
     if (args.library):
@@ -233,9 +237,9 @@ if (args.matchms):
     spectra_list=[]
     for s in spectrums:
         new = convert.convert_spectrum(s)
-        print(new.parameters)
+        # print(new.parameters)
         spectra_list.append(new)
-    print(spectra_list[4].feature_id)
+    # print(spectra_list[4].feature_id)
 
     
 
