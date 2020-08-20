@@ -1,3 +1,6 @@
+"""Method to load an mgf file and make Spectrum objects
+"""
+
 from msmolnet.Spectrum import Spectrum
 
 def read_mgf(file_path):

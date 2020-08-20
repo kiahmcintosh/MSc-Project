@@ -1,3 +1,6 @@
+"""Method to test the conversion of a matchms spectrum to a MSMolNet spectrum
+"""
+
 from msmolnet.use_matchms import convert_matches as convert
 
 import numpy as np
@@ -7,7 +10,7 @@ from matchms.similarity import CosineGreedy
 
 
 
-def test_convert_matches():
+def test_convert_spectra():
     spectrum = Spectrum(mz=np.array([100, 150, 200.]),
                 intensities=np.array([0.7, 0.2, 0.1]),
                 metadata={'SCANS': '1'})

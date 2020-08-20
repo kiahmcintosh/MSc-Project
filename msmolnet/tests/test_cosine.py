@@ -1,8 +1,15 @@
+"""Tests for similarity scoring methods
+Use test_cosine() to run all tests
+Throws an assertion error if a score or number of matched peaks is not correct
+"""
+
 from msmolnet import similarity
 from msmolnet import Spectrum
 import math
 
 def same_spectrum():
+    """Test two example spectra with same values
+    """
 
     S1=Spectrum.Spectrum()
     S1.add_peak(50.7,234)
@@ -33,6 +40,8 @@ def same_spectrum():
     assert math.isclose(score,1.0), "Incorrect score with maximum weighted method"
 
 def all_match():
+    """Spectra where all the peaks match within the default tolerance
+    """
     S1=Spectrum.Spectrum()
     S1.add_peak(50.7,234)
     S1.add_peak(54.6,585)
@@ -63,6 +72,8 @@ def all_match():
 
 
 def no_match():
+    """Spectra where no peaks match
+    """
     S1=Spectrum.Spectrum()
     S1.add_peak(50.7,234)
     S1.add_peak(54.6,585)
@@ -93,6 +104,9 @@ def no_match():
     assert score==0, "Incorrect score with maximum weighted method"
 
 def max_v_greedy():
+    """Spectra which give a different score for greedy vs maximum-weighted
+    """
+
     S1=Spectrum.Spectrum()
     S1.add_peak(50.4,16)
     S1.add_peak(50.7,36)
@@ -122,6 +136,8 @@ def max_v_greedy():
     assert math.isclose(g_score,0.57), "Incorrect score with maximum weighted method"
 
 def test_cosine():
+    """Run all cosine tests
+    """
     same_spectrum()
     all_match()
     no_match()

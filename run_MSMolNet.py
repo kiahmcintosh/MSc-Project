@@ -1,17 +1,12 @@
-import argparse
-from mol_networking import similarity
-import time
-start = time.time()
 '''
-Script to run MSMolNet from a command line
+Script to run MSMolNet from command line
 
 
 Example usage:
-    python molecular_networking.py <input_file> -o example_output -l <library_file>
+    python run_MsMolNet.py <input_file> -o <output_file> -l <library_file>
 
 
-
-usage: molecular_networking.py <input-mgf> [options]
+usage: run_MSMolNet.py <input-mgf> [options]
 
 Test input arguments.
 
@@ -23,18 +18,12 @@ optional arguments:
   -o OUTPUT, --output OUTPUT
                         Output GraphML file path and name, excluding
                         '.graphml' (default: output)
-  -l LIBRARY, --library LIBRARY
-                        Library mgf file path and name, excluding '.mgf'
-                        (default: None)
-  -lp LIBRARY_PEAKS, --library-peaks LIBRARY_PEAKS
-                        Minimum number of peaks required to match a library
-                        spectrum (default: 3)
-  -ls LIBRARY_SCORE, --library-score LIBRARY_SCORE
-                        Minimum similarity score required to match a library
-                        spectrum (default: 0.7)
-  -lpt LIB_PRECURSOR_TOLERANCE, --lib-precursor-tolerance LIB_PRECURSOR_TOLERANCE
-                        Precursor mass tolerance allowed when matching to
-                        library spectra (default: 1.0)
+  -p PEAKS, --peaks PEAKS
+                        Minimum number of peaks required to match a spectrum
+                        (default: 6)
+  -s SCORE, --score SCORE
+                        Minumum cosine score for a spectral match to be kept
+                        (default: 0.7)
   --greedy              Use the fast greedy method of similarity scoring.
                         Default will use maximum weighted method (default:
                         False)
@@ -46,31 +35,45 @@ optional arguments:
                         400.0)
   -ft FRAGMENT_TOLERANCE, --fragment-tolerance FRAGMENT_TOLERANCE
                         Fragment tolerance when comparing two fragment peaks
-                        (default: 0.1)
-  -p PEAKS, --peaks PEAKS
-                        Minimum number of peaks required to match a spectrum
-                        (default: 6)
-  -s SCORE, --score SCORE
-                        Minumum cosine score for a spectral match to be kept
-                        (default: 0.7)
+                        (default: 0.3)
   -n N_NEIGHBOURS, --n-neighbours N_NEIGHBOURS
                         Maximum number of neighbours a spectrum can have in
                         the network (default: 10)
   -f FAMILY_SIZE, --family-size FAMILY_SIZE
                         Maximum molecular family size allowed in the network
                         (default: 100)
+  -l LIBRARY, --library LIBRARY
+                        Library mgf file path and name, excluding '.mgf'
+                        (default: None)
+  -ls LIBRARY_SCORE, --library-score LIBRARY_SCORE
+                        Minimum similarity score required to match a library
+                        spectrum (default: 0.7)
+  -lp LIBRARY_PEAKS, --library-peaks LIBRARY_PEAKS
+                        Minimum number of peaks required to match a library
+                        spectrum (default: 3)
+  -lpt LIB_PRECURSOR_TOLERANCE, --lib-precursor-tolerance LIB_PRECURSOR_TOLERANCE
+                        Precursor mass tolerance allowed when matching to
+                        library spectra (default: 1.0)
   --matchms             use the MatchMS for reading mgf file and calculating
                         similarities (default: False)
   --ms1 MS1 MS1         Do t-test on MS1 data. Requires a .csv file of peak
                         area in each sample for each spectrum and a .csv file
                         with columns "sample" and "group" (default: None)
+
 '''
+
+import argparse
+from msmolnet import similarity
+
+# #used to measure run time
+# import time
+# start = time.time()
+
 
 parser = argparse.ArgumentParser(
     description='Test input arguments.',
     usage='%(prog)s <input-mgf> [options]',
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
 
 parser.add_argument(
     'input',
@@ -85,33 +88,19 @@ parser.add_argument(
     )
 
 parser.add_argument(
-    '-l',
-    '--library',
-    help='Library mgf file path and name, excluding \'.mgf\''
-    )
-
-parser.add_argument(
-    '-lp',
-    '--library-peaks',
-    help='Minimum number of peaks required to match a library spectrum',
+    '-p',
+    '--peaks',
+    help='Minimum number of peaks required to match a spectrum',
     type=int,
-    default=3
-    )
+    default=6
+)
 
 parser.add_argument(
-    '-ls',
-    '--library-score',
-    help='Minimum similarity score required to match a library spectrum',
+    '-s',
+    '--score',
+    help='Minumum cosine score for a spectral match to be kept',
     type=float,
     default=0.7
-    )
-
-parser.add_argument(
-    '-lpt',
-    '--lib-precursor-tolerance',
-    help='Precursor mass tolerance allowed when matching to library spectra',
-    type=float,
-    default=1.0
 )
 
 parser.add_argument(
@@ -141,23 +130,7 @@ parser.add_argument(
     '--fragment-tolerance',
     help='Fragment tolerance when comparing two fragment peaks',
     type=float,
-    default=0.1
-)
-
-parser.add_argument(
-    '-p',
-    '--peaks',
-    help='Minimum number of peaks required to match a spectrum',
-    type=int,
-    default=6
-)
-
-parser.add_argument(
-    '-s',
-    '--score',
-    help='Minumum cosine score for a spectral match to be kept',
-    type=float,
-    default=0.7
+    default=0.3
 )
 
 parser.add_argument(
@@ -177,6 +150,37 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '-l',
+    '--library',
+    help='Library mgf file path and name, excluding \'.mgf\''
+    )
+
+parser.add_argument(
+    '-ls',
+    '--library-score',
+    help='Minimum similarity score required to match a library spectrum',
+    type=float,
+    default=0.7
+    )
+
+parser.add_argument(
+    '-lp',
+    '--library-peaks',
+    help='Minimum number of peaks required to match a library spectrum',
+    type=int,
+    default=3
+    )
+
+parser.add_argument(
+    '-lpt',
+    '--lib-precursor-tolerance',
+    help='Precursor mass tolerance allowed when matching to library spectra',
+    type=float,
+    default=1.0
+)
+
+
+parser.add_argument(
     '--matchms',
     help='use the MatchMS for reading mgf file and calculating similarities',
     action='store_true'
@@ -192,7 +196,6 @@ parser.add_argument(
 
 
 args = parser.parse_args()
-# print(args.accumulate(args.integers))
 print(args)
 
 if (args.matchms):
@@ -204,7 +207,7 @@ if (args.matchms):
     from matchms.filtering import add_precursor_mz
     from matchms import calculate_scores
     from matchms.similarity import ModifiedCosine
-    from mol_networking.use_matchms import convert_matches as convert
+    from msmolnet.use_matchms import convert_matches as convert
     
     input_mgf=f'{args.input}.mgf'
     print(f"reading file {input_mgf}")
@@ -221,12 +224,7 @@ if (args.matchms):
         spectrum = normalize_intensities(spectrum)
         print(spectrum.get('precursor_mz'))
         spectrums.append(spectrum)
-
-    if (args.library):
-        from mol_networking.use_matchms import library_match as lib
-        library_mgf=f'{args.library}.mgf'
-        lib.library_match(spectrums,library_mgf,precursor_tol=args.lib_precursor_tolerance,cosine=args.library_score,n_peaks=args.library_peaks)
-        
+ 
 
     scores = calculate_scores(references=spectrums,
                           queries=spectrums,
@@ -237,18 +235,16 @@ if (args.matchms):
     spectra_list=[]
     for s in spectrums:
         new = convert.convert_spectrum(s)
-        # print(new.parameters)
         spectra_list.append(new)
-    # print(spectra_list[4].feature_id)
+
 
     
 
 else:
-    from mol_networking import read_mgf as mgf
+    from msmolnet import read_mgf as mgf
 
     input_mgf=f'{args.input}.mgf'
     print(f"reading file {input_mgf}")
-    
     spectra_list=mgf.read_mgf(input_mgf)
 
     if (args.library):
@@ -260,10 +256,9 @@ else:
     print("calculating cosine scores")
     spectra_matches=similarity.compare_all(spectra_list,fragment_tolerance=args.fragment_tolerance,modified=args.modified,precursor_tolerance=args.modification_mass,greedy=args.greedy)
 
-    print(len(spectra_list))
 
 if (args.ms1):
-    from mol_networking import ms1_analysis
+    from msmolnet import ms1_analysis
     ms1_analysis.samples_ttest(args.ms1[0],args.ms1[1],spectra_list)
 
 #filter matches
@@ -274,7 +269,7 @@ spectra_matches=similarity.filter_pairs(
     peak_threshold=args.peaks)
 
 
-from mol_networking import network    
+from msmolnet import network    
 
 print("making graph")
 graph=network.make_network(spectra_list,spectra_matches)
@@ -289,8 +284,7 @@ output_file=f'{args.output}.graphml'
 network.write_graphml(graph, output_file)
 print(f"written to {output_file}")
 
-
-elapsed = time.time()-start
-#print time of program running
-print(time.strftime("\nelapsed time:\t%H:%M:%S", time.gmtime(elapsed)))
-print("\n")
+# #print time of program running
+# elapsed = time.time()-start
+# print(time.strftime("\nelapsed time:\t%H:%M:%S", time.gmtime(elapsed)))
+# print("\n")

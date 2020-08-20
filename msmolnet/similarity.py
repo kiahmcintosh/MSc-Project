@@ -1,3 +1,7 @@
+"""
+Methods to carry out cosine similarity calculations and filtering, and library matching
+"""
+
 import networkx as nx
 import bisect
 from msmolnet import network
@@ -7,7 +11,7 @@ from msmolnet import read_mgf as mgf
 
 
 def compare_all(spectra_list,fragment_tolerance=0.3, modified=False,precursor_tolerance=1.0,greedy=False):
-    """takes a list of spectrum objects and calculates modified cosine for each spectrum matched with every other spectrum.
+    """Takes a list of spectrum objects and calculates modified cosine for each spectrum matched with every other spectrum.
     returns a nested dictionary of spectrum matches with cosine score and number of matching peaks"""
 
     #dictionary to store spectral matches
@@ -41,13 +45,11 @@ def compare_all(spectra_list,fragment_tolerance=0.3, modified=False,precursor_to
                 matches[spectrum_two]={}
             matches[spectrum_two][spectrum_one]={'cosine':score,'peaks':peak_count}
             
-            
-    
     return matches
 
 def cosine_score_greedy(spectrum_one, spectrum_two, fragment_tolerance=0.3, modified=False,precursor_tolerance=1.0):
-    """takes two MS2 Spectrum objects and returns the cosine similarity score and number of matched peaks.
-    By default will calculate normal cosine; use modification=True to return modified cosine.
+    """Takes two MS2 Spectrum objects and returns the cosine similarity score and number of matched peaks.
+    By default will calculate normal cosine; use modification=True to return modified cosine scores.
     Default fragment mass tolerance = 0.3
     Default precursor mass tolerance = 1.0"""
     modification=spectrum_two.pep_mass-spectrum_one.pep_mass
@@ -102,10 +104,9 @@ def cosine_score_greedy(spectrum_one, spectrum_two, fragment_tolerance=0.3, modi
     return total, peak_count
 
 def cosine_score_max(spectrum_one, spectrum_two, fragment_tolerance=0.3, modified=False,precursor_tolerance=1.0):
-    """takes two MS2 Spectrum objects and returns the maximum cosine similarity score and number of matched peaks.
-    based on the 'blossom' method for finding augmenting paths and the 'primal-dual' method for finding a matching
-    of maximum weight. "Efficient Algorithms for Finding Maximum Matching in Graphs", Zvi Galil, ACM Computing Surveys, 1986.
-    
+    """Takes two MS2 Spectrum objects and returns the maximum cosine similarity score and number of matched peaks.
+    Uses maximum-weighted method to select peak matches.
+       
     By default will calculate normal cosine; use modification=True to return modified cosine.
     Default fragment mass tolerance = 0.3
     Default precursor mass tolerance = 1.0"""
@@ -153,16 +154,18 @@ def cosine_score_max(spectrum_one, spectrum_two, fragment_tolerance=0.3, modifie
     return total,peak_count
       
 def filter_pairs(pairs,cosine_threshold=0.7,peak_threshold=6):
-    """Removes any spectra matches with cosine <0.7 and <6 matched peaks"""
-    # print(pairs)
+    """Takes a dictionary of spectra matches and removes any matches below given cosine and n peaks thresholds
+    Default score threshold = 0.7
+    Default peaks threshold = 6
+    """
     for spectrum in pairs:
-        # print(f"{spectrum}\t{pairs[spectrum]}")
+        
         #only keep spectral matches if they pass the thresholds
         filtered = {key:val for key, val in pairs[spectrum].items() if val['cosine']>=cosine_threshold and val['peaks']>=peak_threshold}
         pairs[spectrum]=filtered
     
-    # print(pairs)
-
+   
+    #new dictionary to hold filtered matches
     filtered_pairs={}
     #only keep spectra with matches
     for spectrum in pairs:
@@ -178,8 +181,10 @@ def library_match(spectra_list,lib_mgf,precursor_tol=1.0,cosine=0.7,n_peaks=3):
     library_sort=sorted(library)
 
     for test_spectra in spectra_list:
+        #find position where test spectrum would go in library list by precursor mass
         pos=bisect.bisect(library_sort,test_spectra)
         matches=[]
+        #calculate scores for positions above and below insertion point
         for lib in library_sort[pos-2:pos+2]:
             score,peaks=cosine_score_max(test_spectra,lib,modified=False,precursor_tolerance=precursor_tol)
             if score>=cosine and peaks>=n_peaks:

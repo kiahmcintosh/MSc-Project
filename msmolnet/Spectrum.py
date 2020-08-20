@@ -1,9 +1,21 @@
+"""Class to hold an MS2 spectrum
+"""
+
 import numpy
 from .Peak import Peak
 from functools import total_ordering
 
 @total_ordering
 class Spectrum:
+    """Class to hold an MS2 Spectrum
+
+    Parameters:
+    peaks -- a list of Peak objects
+    feature_id -- set from 'scans' in metadata, used as node labels in the network
+    parameters -- dictionary of metadata provided in the MGF file
+    library_parameters (if similarity.library_match method has been used) --metadata from the matched library spectrum
+
+    """
     def __init__(self):
         self.peaks = [] #list of peaks in spectrum
         self.feature_id=None
@@ -22,6 +34,8 @@ class Spectrum:
 
 
     def add_peak(self,mass, intensity):
+        """Create a peak object and add to the list of spectrum peaks
+        """
         self.peaks.append(Peak(mass,intensity))
 
     def euclidean_scale(self):
@@ -40,6 +54,8 @@ class Spectrum:
             peak.scaled_intensity=(peak.sqrt_intensity)/norm
 
     def set_id(self):
+        """Get scans number from metadata and set as spectrum ID
+        """
         if 'SCANS' in self.parameters:
             self.feature_id=self.parameters['SCANS']
         if 'scans' in self.parameters:

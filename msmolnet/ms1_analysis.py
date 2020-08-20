@@ -1,7 +1,13 @@
+"""Methods to analyse MS1 intensities
+"""
+
 import csv
 from scipy import stats
 
 def sample_groups(groups_file):
+    """Requires file with two columns 'samples', 'groups', determining which sample is in which of two groups.
+    Returns a dictionary of the groups and the samples that belong in them
+    """
     groups={}
     with open(groups_file) as csvfile:
         reader=csv.DictReader(csvfile)
@@ -14,20 +20,10 @@ def sample_groups(groups_file):
     return groups
 
 
-def sig_change(a,b):
-    statistic,p_value = stats.ttest_ind(a,b)
-    if p_value<=0.05:
-        if result[0]>1:
-            return 1
-        else:
-            return (-1)
-    else:
-        # print("groups are not significantly different")
-        return 0
-
-
 def samples_ttest(file_path,sample_groups_file,spectra_list):
-    # print(sample_groups(sample_groups_file))
+    """Takes a csv file path of MS1 peak areas, a csv file path of which group each sample belongs in, and a list of Spectrum objects.
+    Performs an independent t-test for each spectrum and adds the results to the Spectrum object.
+    """
     groups=sample_groups(sample_groups_file)
     key1,key2 = groups.keys()
 
@@ -38,6 +34,7 @@ def samples_ttest(file_path,sample_groups_file,spectra_list):
         reader=csv.DictReader(csvfile)
         for row in reader:
 
+            #peak areas of samples in first group
             list1=[]
             for sample in group1:
                 result=[float(value) for key,value in row.items() if str(sample) in key and 'area' in key]
@@ -46,6 +43,7 @@ def samples_ttest(file_path,sample_groups_file,spectra_list):
                 elif len(result)==0:
                     print(f"No MS1 peak area found for sample {sample}")
 
+            #peak areas of samples in second group
             list2=[]
             for sample in group2:
                 result=[float(value) for key,value in row.items() if str(sample) in key and 'area' in key]
@@ -54,39 +52,31 @@ def samples_ttest(file_path,sample_groups_file,spectra_list):
                 elif len(result)==0:
                     print(f"No MS1 peak area found for sample {sample}")
             
+            #t-test to compare the two groups
             statistic,p_value = stats.ttest_ind(list1,list2)
+            #use p_value threshold of 0.05 for significance
             if p_value<=0.05:
+                #determine which group has greater intensity value
                 if statistic>0:
                     greater=key1
                 else:
                     greater=key2
             else:
                 greater="No significance"
-            
-            # result=sig_change(list1,list2)
-            # if result>0:
-            #     greater=key1
-            # elif result<0:
-            #     greater=key2
-            # else:
-            #     greater="No significance"
 
             spectra_list.sort(key=lambda S: int(S.parameters['SCANS']))
-            # print(spectra_list)
 
             row_ID=[value for key,value in row.items() if 'ID' in key]
             row_ID=row_ID[0]
 
+            #find spectrum that the row corresponds to and add t-test info
             added=False
             for i in range(len(spectra_list)):
-                # print(f"i: {i}")
                 for S in spectra_list[i:]:
                     if S.parameters['SCANS'] == row_ID:
-                        # print(f"row: {row_ID}\tspectrum: {S.parameters['SCANS']}")
                         S.parameters['greater_group']=greater
                         S.parameters['tstatistic']=statistic
                         S.parameters['p_value']=p_value
-                        # print(f"sample: {S}\tgreater: {greater}")
                         added=True
                         break
 

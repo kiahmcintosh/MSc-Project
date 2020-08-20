@@ -16,13 +16,13 @@ conda create --name MSMolNet-env --file --MSMolNet-conda.spec
 ```
 <p>&nbsp;</p>
 
-## Command line usage
+## Command line script usage
 Usage:
 ```
 python run_MSMolNet <input-file> [options]
 ```
 
-|Argument |Default |Description |
+|Option|Default|Description|
 |:-------------|:--------|:-------|
 |\<input-file>||(Required) Input MGF file name, excluding '.mgf' 
 |-h/--help|  | Display help options|
@@ -32,7 +32,7 @@ python run_MSMolNet <input-file> [options]
 |--greedy||Use the fast greedy method of selecting peak matches instead of maximum-weighted|
 |-m/--modified \<bool>|True|Use modified or unmodified cosine when calculating similarity|
 |-ma/--modification-mass \<float>|400.0|Maximum modification mass allowed when comparing two spectra|
-|-ft/--fragment-tolerance \<float>|0.1|Mass tolerance when comparing fragment peaks|
+|-ft/--fragment-tolerance \<float>|0.3|Mass tolerance when comparing fragment peaks|
 |-n/--n-neighbours \<int>|10|Maximum number of neighbours a spectrum can have in the network|
 |-f/--family-size \<int>|100|Maximum molecular family size allowed in the network|
 |-l/--library \<str>|None|MGF file name to be used for library matching, excluding '.mgf'|
@@ -40,7 +40,7 @@ python run_MSMolNet <input-file> [options]
 |-lp/--library-peaks \<int>|3|Minimum number of matching peaks required for a spectrum to match a library spectrum|
 |-lpt/--lib-precursor-tolerance \<float>|1.0|Precursor mass tolerance for comparing a spectrum to library spectra|
 |--matchms||Use matchms for reading the mgf file and calculating modified cosine scores|
-|--ms1 \<str> \<str>||Carry out independent t-tests on MS1 feature intensities. Requires a CSV file of peak are in each sample for each spectruma and a CSV file with colums 'sample' and 'group'|
+|--ms1 \<str> \<str>||Carry out independent t-tests on MS1 feature intensities. Requires a CSV file of peak area in each sample for each spectrum and a CSV file with columns 'sample' and 'group'|
 <p>&nbsp;</p>
 
 ## Command line examples
@@ -64,7 +64,7 @@ python run_MSMolNet.py spectra_file -o network --ms1 ms1_intensities.csv groups.
 ```
 <p>&nbsp;</p>
 
-## Script based example
+## Script of example workflow
 ```
 from msmolnet import read_mgf, similarity, compare_ms1, network
 

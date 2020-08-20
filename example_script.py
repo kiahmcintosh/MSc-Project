@@ -1,3 +1,5 @@
+"""Example of MSMolNet workflow"""
+
 from msmolnet import read_mgf, similarity, compare_ms1, network
 
 #make list of spectrum objects from mgf file

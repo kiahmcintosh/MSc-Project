@@ -1,3 +1,8 @@
+"""An old file that was going to be used for library matching using matchms but was decided against becasue of the time constraint
+of running matchms scoring functions
+"""
+
+
 from matchms.similarity import CosineHungarian
 from matchms.importing import load_from_mgf
 from matchms.filtering import default_filters

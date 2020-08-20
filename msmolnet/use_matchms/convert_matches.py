@@ -1,8 +1,13 @@
+"""
+Methods used to convert matchms Spectrum and Scores into MSMolNet objects to do molecular networking
+"""
+
 from msmolnet.Peak import Peak
 from msmolnet.Spectrum import Spectrum
 
 def convert_scores(scores):
-    """Converts a MatchMS Scores object into a dictionary of matches to be used in molecular networking
+    """Converts a matchms Scores object into a dictionary of matches to be used in molecular networking
+    Returns: dict
     """
     matches={}
     for score in scores:
@@ -12,7 +17,6 @@ def convert_scores(scores):
             continue
         
         
-
         reference=reference.metadata['scans']
         
         query=query.metadata['scans']
@@ -30,6 +34,9 @@ def convert_scores(scores):
 
 
 def convert_spectrum(matchms_spectrum):
+    """Converts a matchms Spectrum object into a MSMolNet Spectrum object
+    Returns: MSMolNet.Spectrum
+    """
     peaks=matchms_spectrum.peaks
     mz=peaks.mz
     intensities=peaks.intensities
